@@ -45,6 +45,10 @@ ingest:
   # 早报时段标记
   brief_schedule_time: "07:30"
 
+  # 原始数据存储
+  raw_data_dir: ~/linglong/data/raw        # JSON 冷存储目录
+  raw_redis_ttl_days: 14                   # Redis 热 TTL（天）
+
   # RSS 订阅源
   rss_sources:
     - name: AIHOT

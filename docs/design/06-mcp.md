@@ -58,11 +58,12 @@ sequenceDiagram
 
 ---
 
-## 工具列表（5 个）
+## 工具列表（6 个）
 
 | 工具 | 说明 |
 |------|------|
-| `generate_brief()` | 生成当天 AI 早报（有缓存） |
+| `generate_brief()` | 生成 AI 早报：优先从 Redis 读 raw 数据，无则采集 → LLM 合成 |
+| `fetch_raw(date, source)` | 获取结构化原始数据（Redis → fallback 文件） |
 | `execute_package(path)` | 执行指定 YAML 采集包 |
 | `fetch_rss(url)` | 采集单个 RSS feed |
 | `search_web(query)` | SearXNG 搜索 |
@@ -132,10 +133,11 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong/mcp/server.py` | FastMCP 工厂 + 工具注册 |
+| `src/linglong/mcp/server.py` | FastMCP 工厂 + 工具注册（6 个） |
 | `src/linglong/mcp/__main__.py` | 按 transport 启动，含日志初始化 |
 | `src/linglong/mcp/_auth.py` | Token 认证中间件 |
-| `src/linglong/mcp/tools.py` | 5 个 MCP 工具实现（含 Redis 缓存） |
-| `src/linglong/cli.py` | CLI 入口：brief / scout / serve |
+| `src/linglong/mcp/tools.py` | 6 个 MCP 工具实现 |
+| `src/linglong/scout/raw_store.py` | 结构化原始数据存储（Redis 热 + JSON 冷） |
+| `src/linglong/cli.py` | CLI 入口：brief / collect / scout / serve |
 | `src/linglong/config.py` | 配置模型 + `setup_logging()` |
 | `deploy/linglong-scout-mcp.service` | systemd 守护配置 |
