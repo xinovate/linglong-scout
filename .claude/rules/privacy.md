@@ -17,10 +17,10 @@
 
 | 禁止 | 替代 |
 |------|------|
-| `redacted-server-ip` | `localhost` 或 `your-server-ip` |
-| `redacted-domain` | `your-domain.example.com` |
-| `https://open.bigmodel.cn/api/anthropic` | `https://api.example.com/v1` |
-| `glm-5.1` | `gpt-4o` 或通用模型名 |
+| 真实服务器 IP | `localhost` 或 `192.168.1.100` 等内网示例 |
+| 真实域名 | `example.com` 或 `baidu.com` 等公开域名 |
+| 真实 LLM 端点 | `https://api.example.com/v1` |
+| 真实模型名 | `gpt-4o` 等通用模型名 |
 | 真实 API Key | 环境变量引用 `${VAR_NAME}` 或 `your-secret-key` |
 
 ## 适用范围
