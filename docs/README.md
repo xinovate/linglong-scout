@@ -69,8 +69,8 @@ graph TD
 | 36氪快讯 | RSSHub | ~20 | 快讯 |
 | 量子位 | RSS feed | ~10 | AI 垂直媒体 |
 | The Rundown AI | RSS feed | ~20 | 英文 AI Newsletter |
-| 财联社电报 | RSSHub | ~20 | 财经快讯 |
-| 财联社深度 | RSSHub | ~10 | 深度报道 |
+| 华尔街见闻快讯 | RSSHub | ~20 | 财经实时快讯 |
+| 财新网 | RSSHub | ~15 | 深度财经报道 |
 | TechCrunch AI | RSS feed | ~20 | 英文 AI 新闻 |
 | The Verge AI | RSS feed | ~15 | 英文 AI 新闻 |
 | 工信部文件公示 | RSSHub (gov) | ~15 | AI 大模型备案、产业政策 |

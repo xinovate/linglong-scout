@@ -61,10 +61,10 @@ ingest:
       url: https://www.qbitai.com/feed
     - name: The Rundown AI
       url: https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml
-    # - name: 财联社电报
-    #   url: http://localhost:1200/cls/telegraph
-    # - name: 财联社深度
-    #   url: http://localhost:1200/cls/depth
+    # - name: 华尔街见闻快讯
+    #   url: http://localhost:1200/wallstreetcn/live
+    # - name: 财新网
+    #   url: http://localhost:1200/caixin/latest
     - name: TechCrunch AI
       url: https://techcrunch.com/category/artificial-intelligence/feed/
     - name: The Verge AI
