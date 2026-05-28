@@ -1,0 +1,14 @@
+# 工作日志
+
+> **定位**：按天记录工作过程中的问题调查、决策和发现。
+> **不记录**：阶段方向（去设计文档）、设计决策（去 `docs/ingest/design/`）。
+> **结构**：概览 → 问题/任务 → 结论 → 关联链接。
+> **更新时机**：当天工作结束或会话压缩前。
+
+| 日期 | 主题 | 关键结论 |
+|------|------|----------|
+| 2026-05-28 | 从 linglong-knowledge 拆分为独立项目 linglong-scout | 初始版本提交；文档和 journal 从 linglong-knowledge 同步 |
+| 2026-05-26 | v2.4–v2.6 Agent 接入 + 并发优化 + 缓存 + MCP 远程部署 | Claude Code MCP 连通；数据采集 57s→7.6s；日内缓存；HTTP+Token 认证 |
+| 2026-05-25 | v2.2 ingest 增强 + 安全加固 + MCP 工具增强 | 融资快照；API Key 三服务加固；generate_brief/search_web MCP |
+| 2026-05-23 | v1.3 信源增强 + 动态标签 + 反馈闭环 | ArXiv/GitHub 适配器；auto_tag；FeedbackStore；search_queries 替换 dimensions |
+| 2026-05-22 | v1.2 早报能力（SearXNG + AIHOT + LLM + 晨报） | 端到端通过；英文关键词效果远好于中文；多源聚合架构 |
