@@ -202,11 +202,55 @@ mcp:
 }
 ```
 
+### Docker 部署（替换 systemd）
+
+用于服务器部署，`network_mode: host` 共享主机网络，直接访问 SearXNG/RSSHub/Redis。
+
+#### 1. 准备配置文件
+
+```bash
+# 服务器端配置模板（所有服务用 127.0.0.1）
+cp deploy/.scout.yml.example .scout.yml
+# 编辑 .scout.yml，确认 RSS 源和搜索关键词
+
+# 环境变量（敏感信息）
+cp deploy/.env.example .env
+# 填入实际 Key 和 Token
+```
+
+`.scout.yml` 中敏感值通过 `${ENV_VAR}` 引用 `.env` 中的变量。
+
+#### 2. 构建并启动
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+#### 3. 验证
+
+```bash
+docker compose ps
+docker compose logs -f
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9900/mcp/scout
+```
+
+#### 4. 替换旧 systemd 服务
+
+```bash
+systemctl stop linglong-mcp
+systemctl disable linglong-mcp
+docker compose up -d
+```
+
+完整部署步骤见 `deploy/docker-deploy.sh`。
+
 ### 已知注意事项
 
 - `generate_brief()` 内部用 `_run_async()` (ThreadPoolExecutor) 运行 async 函数，因为 MCP server 自身有事件循环，不能嵌套 `asyncio.run()`
 - RSSHub `ACCESS_KEY` 仅追加到包含 `:1200` 端口的 URL
 - GitHub API 优先用 `gh auth token` 认证（5000 req/hr），未认证仅 60 req/hr
+- Docker 容器内无 `gh` CLI，GitHub API 调用将无认证（60 req/hr 限制）
 
 ## 调用方式
 

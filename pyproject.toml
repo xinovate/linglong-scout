@@ -16,6 +16,7 @@ dependencies = [
     "feedparser>=6.0",
     "schedule>=1.2",
     "starlette",
+    "uvicorn",
     "redis>=5.0",
 ]
 

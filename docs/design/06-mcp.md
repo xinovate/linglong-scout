@@ -88,6 +88,33 @@ graph LR
     end
 ```
 
+### Docker 部署
+
+服务器端用 Docker 容器替换 systemd + venv，`network_mode: host` 共享主机网络。
+
+```mermaid
+graph LR
+    subgraph Docker容器
+        SCOUT["linglong-scout<br/>MCP Server :9900"]
+    end
+
+    subgraph 主机服务
+        SEARXNG["SearXNG :8088"]
+        RSSHUB["RSSHub :1200"]
+        REDIS["Redis :6379"]
+    end
+
+    CF["Cloudflare Tunnel"] -->|127.0.0.1:9900| SCOUT
+    SCOUT -->|host 网络| SEARXNG
+    SCOUT -->|host 网络| RSSHUB
+    SCOUT -->|host 网络| REDIS
+```
+
+配置文件：
+- `.scout.yml` — 服务器端配置（`deploy/.scout.yml.example`），敏感值用 `${ENV_VAR}` 引用
+- `.env` — 环境变量（`deploy/.env.example`），包含 API Key、Token、Redis URL
+- `docker-compose.yml` — `network_mode: host`，挂载 `.scout.yml` 和 `data/` 目录
+
 ---
 
 ## CLI 命令
@@ -140,4 +167,8 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 | `src/linglong/scout/raw_store.py` | 结构化原始数据存储（Redis 热 + JSON 冷） |
 | `src/linglong/cli.py` | CLI 入口：brief / collect / scout / serve |
 | `src/linglong/config.py` | 配置模型 + `setup_logging()` |
-| `deploy/linglong-scout-mcp.service` | systemd 守护配置 |
+| `Dockerfile` | Python 3.12-slim，pip install |
+| `docker-compose.yml` | network_mode: host，挂载配置和数据 |
+| `deploy/.scout.yml.example` | 服务器端配置模板 |
+| `deploy/.env.example` | 服务器端环境变量模板 |
+| `deploy/docker-deploy.sh` | 部署参考脚本 |
