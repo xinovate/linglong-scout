@@ -45,7 +45,11 @@ graph TD
         A3[RSS 订阅源<br/>AIHOT/36氪/量子位/The Rundown AI/<br/>TechCrunch/The Verge/财联社/<br/>工信部/发改委] --> D
     end
 
-    D --> E[IngestAgent<br/>单次 LLM prompt]
+    D --> R[RawStore<br/>结构化存储]
+    R -->|Redis 热 14d| RH[(Redis)]
+    R -->|JSON 文件 冷| RF[(~/linglong/data/raw/)]
+
+    RH --> E[IngestAgent<br/>单次 LLM prompt]
     E --> F[5 维度 Markdown 早报]
 
     subgraph 去重与历史
@@ -90,7 +94,7 @@ graph TD
 | `mcp.redis_url` | `""` | Redis 连接地址（如 `redis://localhost:6379/0`） |
 | `brief_schedule_time` | `07:30` | 播报时段标记（如 `2026-05-25 07:30 → 2026-05-26 07:30`） |
 
-Redis 数据结构：`scout:brief:{date}`（TTL 25h）+ `scout:history:{date}`（TTL 16d）。
+Redis 数据结构：`scout:brief:{date}`（TTL 25h）+ `scout:history:{date}`（TTL 16d）+ `scout:raw:{date}:{source}`（TTL 14d）。
 
 ## 核心组件
 

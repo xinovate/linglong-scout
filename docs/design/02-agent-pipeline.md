@@ -1,12 +1,12 @@
 # D-02 Agent 流水线
 
-> 状态：✅ 已实现 | 最后更新：2026-05-26 | 依赖：[D-01 数据源](01-data-sources.md)
+> 状态：✅ 已实现 | 最后更新：2026-05-28 | 依赖：[D-01 数据源](01-data-sources.md)
 
 ---
 
 ## 概述
 
-`IngestAgent.run()` 是 ingest 的核心——三路数据采集、聚合去重、单次 LLM prompt 直接输出 markdown 早报。
+`IngestAgent` 将采集与加工解耦为两个阶段：`collect()` 采集并存储结构化原始数据，`_generate()` 从原始数据生成早报。
 
 ---
 
@@ -14,16 +14,17 @@
 
 ```mermaid
 flowchart TD
-    START([IngestAgent.run]) --> PARALLEL
+    START([IngestAgent.run]) --> COLLECT
 
-    subgraph PARALLEL["三路并发采集 asyncio.gather"]
+    subgraph COLLECT["collect() — 三路并发采集"]
         direction TB
-        S1["SearXNG<br/>56 个关键词<br/>Semaphore(5)"]
+        PARALLEL["asyncio.gather"]
+        S1["SearXNG<br/>关键词搜索<br/>Semaphore(5)"]
         S2["GitHub Trending<br/>日/周/月<br/>三级 fallback"]
         S3["RSS 11 源<br/>Semaphore(3)"]
     end
 
-    PARALLEL --> DEDUP
+    COLLECT --> DEDUP
 
     subgraph DEDUP["URL 去重"]
         D1["SearXNG seen_urls 去重"]
@@ -31,15 +32,17 @@ flowchart TD
         D3["RSS 排除 SearXNG 已有 URL"]
     end
 
-    DEDUP --> BUILD
+    DEDUP --> STORE["store_raw()<br/>Redis 热 14d + JSON 文件冷"]
+
+    STORE --> GEN["_generate()"]
 
     subgraph BUILD["Prompt 组装"]
         B1["加载 morning_brief.md 模板"]
-        B2["注入 9 个占位符"]
+        B2["注入占位符"]
         B3["{search_results}<br/>{github_data}<br/>{rss_data}<br/>{company_snapshot}<br/>{history_section}<br/>..."]
     end
 
-    BUILD --> LLM
+    GEN --> BUILD --> LLM
 
     subgraph LLM["LLM 调用"]
         L1["_call_llm(prompt)"]
@@ -58,6 +61,7 @@ flowchart TD
     style S1 fill:#4CAF50,color:#fff
     style S2 fill:#2196F3,color:#fff
     style S3 fill:#FF9800,color:#fff
+    style STORE fill:#00BCD4,color:#fff
     style L1 fill:#9C27B0,color:#fff
     style FALLBACK fill:#f44336,color:#fff
 ```
@@ -70,44 +74,49 @@ flowchart TD
 sequenceDiagram
     participant Agent as Claude Code / OpenClaw
     participant MCP as MCP Server
-    participant Cache as ~/linglong/briefs/
+    participant Redis as Redis
     participant AgentCore as IngestAgent
     participant LLM as LLM API
 
     Agent->>MCP: generate_brief()
 
-    MCP->>Cache: 检查 {today}.md 是否存在
-    alt 缓存命中
-        Cache-->>MCP: 返回缓存内容
+    MCP->>Redis: GET scout:brief:{today}
+    alt Brief 缓存命中
+        Redis-->>MCP: markdown
         MCP-->>Agent: {cached: true, output: "..."}
-    else 缓存未命中
-        Cache-->>MCP: 不存在
+    else Brief 未缓存
+        MCP->>Redis: EXISTS scout:raw:{today}:*
+        alt Raw 数据存在
+            Redis-->>MCP: true
+            MCP->>Redis: GET scout:raw:{today}:searxng/rss/github
+            MCP->>AgentCore: agent.run_from_raw(package, raw)
+        else Raw 数据不存在
+            MCP->>AgentCore: _run_async(agent.run(package))
 
-        MCP->>AgentCore: _run_async(agent.run(package))
+            par 三路并发
+                AgentCore->>AgentCore: _search_all_keywords()
+            and
+                AgentCore->>AgentCore: _github_trending()
+            and
+                AgentCore->>AgentCore: _fetch_rss_feeds()
+            end
 
-        par 三路并发
-            AgentCore->>AgentCore: _search_all_keywords()
-        and
-            AgentCore->>AgentCore: _github_trending()
-        and
-            AgentCore->>AgentCore: _fetch_rss_feeds()
+            AgentCore->>Redis: store_raw() → Redis + JSON 文件
         end
 
-        AgentCore->>AgentCore: URL 去重 + Prompt 组装
+        AgentCore->>AgentCore: _generate() — Prompt 组装
         AgentCore->>LLM: _call_llm(prompt)
 
         alt LLM 成功
             LLM-->>AgentCore: markdown 早报
-            AgentCore->>AgentCore: 保存 BriefHistory
+            AgentCore->>Redis: 保存 BriefHistory
         else LLM 失败
             LLM-->>AgentCore: Error
-            AgentCore->>AgentCore: 重试 (最多 2 次)
-            AgentCore->>AgentCore: BriefHistory fallback
+            AgentCore->>AgentCore: 重试 + BriefHistory fallback
         end
 
         AgentCore-->>MCP: markdown 早报
-        MCP->>Cache: 写入 {today}.md
-        MCP->>MCP: 清理过期缓存 (>14 天)
+        MCP->>Redis: SET scout:brief:{today} (TTL 25h)
         MCP-->>Agent: {cached: false, output: "..."}
     end
 ```
@@ -154,7 +163,8 @@ time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} 
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong/scout/agent.py` | `IngestAgent.run()` + 所有采集方法 |
+| `src/linglong/scout/agent.py` | `IngestAgent.collect()` + `run()` + `run_from_raw()` + `_generate()` |
+| `src/linglong/scout/raw_store.py` | 结构化原始数据存储（Redis 热 + JSON 冷） |
 | `src/linglong/scout/prompts/morning_brief.md` | 早报 prompt 模板 |
 | `src/linglong/config.py` | `IngestConfig` 配置模型 |
-| `src/linglong/mcp/tools.py` | `generate_brief()` 缓存 + 调用逻辑 |
+| `src/linglong/mcp/tools.py` | `generate_brief()` 缓存 + raw 路径逻辑 |
