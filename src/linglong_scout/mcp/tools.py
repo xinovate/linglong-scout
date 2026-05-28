@@ -77,7 +77,7 @@ def record_feedback(
     feedback: str,
     tags: list[str] | None = None,
 ) -> str:
-    """Record user feedback on an ingest result for preference learning.
+    """Record user feedback on an scout result for preference learning.
 
     Args:
         content_hash: Hash identifying the news item.
@@ -104,7 +104,7 @@ def record_feedback(
 
 
 def execute_package(package_path: str) -> str:
-    """Execute an ingest package via IngestAgent.
+    """Execute an scout package via IngestAgent.
 
     Returns the morning brief output as markdown.
     """
@@ -138,7 +138,7 @@ def execute_package(package_path: str) -> str:
 
 
 def generate_brief() -> str:
-    """Execute an ingest package (YAML-defined collection of sources).
+    """Execute an scout package (YAML-defined collection of sources).
 
     Returns collected entities for discussion. Use write_entity to save
     selected results to the knowledge store.

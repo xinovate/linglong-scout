@@ -205,7 +205,7 @@ mcp:
 
 ```bash
 # CLI — 生成早报
-linglong-scout ingest
+linglong-scout scout
 
 # MCP — Agent 在对话中按需采集
 # execute_package(path) → 查看结果 → 讨论 → 记录有价值内容

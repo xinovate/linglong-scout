@@ -1,4 +1,4 @@
-"""Tests for Linglong Scout MCP Server ingest tools."""
+"""Tests for Linglong Scout MCP Server scout tools."""
 
 import json
 from unittest.mock import AsyncMock, MagicMock, patch

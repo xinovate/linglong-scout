@@ -1,1 +1,1 @@
-"""Formatting templates for ingest output."""
+"""Formatting templates for scout output."""

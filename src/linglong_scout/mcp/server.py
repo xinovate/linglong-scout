@@ -30,12 +30,12 @@ def create_server() -> FastMCP:
     )
     for tool in _INGEST_TOOLS:
         server.tool()(tool)
-    logger.info("Registered %d ingest tools (stdio mode)", len(_INGEST_TOOLS))
+    logger.info("Registered %d scout tools (stdio mode)", len(_INGEST_TOOLS))
     return server
 
 
 def create_http_app() -> Starlette:
-    """Create a Starlette app with MCP route for ingest tools."""
+    """Create a Starlette app with MCP route for scout tools."""
     config = get_config()
 
     allowed_hosts = []
@@ -46,13 +46,13 @@ def create_http_app() -> Starlette:
 
     server = FastMCP(
         "linglong-scout",
-        streamable_http_path="/mcp/ingest",
+        streamable_http_path="/mcp/scout",
         transport_security=TransportSecuritySettings(
             allowed_hosts=allowed_hosts,
         ),
     )
     for tool in _INGEST_TOOLS:
         server.tool()(tool)
-    logger.info("Registered %d ingest tools at /mcp/ingest", len(_INGEST_TOOLS))
+    logger.info("Registered %d scout tools at /mcp/scout", len(_INGEST_TOOLS))
 
     return server.streamable_http_app()

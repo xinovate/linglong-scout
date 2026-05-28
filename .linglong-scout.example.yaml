@@ -1,19 +1,97 @@
+# Linglong Scout 配置
+# 复制为 .linglong-scout.yaml 并填入实际值
+
 debug: false
 log_level: "INFO"
 data_dir: ~/linglong/data
 
+# ── LLM ──────────────────────────────────────
 llm:
-  api_key: ""         # Or set LL_SCOUT_LLM_API_KEY
+  api_key: ""                            # Or set LL_SCOUT_LLM_API_KEY
   base_url: "https://open.bigmodel.cn/api/anthropic"
   model: "glm-5.1"
 
+# ── 信息采集 ──────────────────────────────────
 ingest:
-  rss_sources: []
+  # SearXNG 搜索服务
   searxng_url: "http://localhost:8088"
-  search_timeout: 30.0
-  packages: []
+  searxng_api_key: ${SEARXNG_API_KEY}
+  search_timeout: 30
 
+  # RSSHub 实例认证（仅追加到 :1200 端口的 URL）
+  rsshub_access_key: ${RSSHUB_ACCESS_KEY}
+
+  # LLM 早报生成
+  llm_max_tokens: 8000
+  llm_retries: 2
+  llm_timeout: 120
+
+  # GitHub 开源趋势
+  github_trending_limits:
+    daily: 5
+    weekly: 3
+    monthly: 3
+  github_search_fallback:
+    since_days: 30
+    min_stars: 500
+
+  # 早报去重（按维度回看天数）
+  brief_history_dir: ~/linglong/brief_history
+  company_snapshot_path: ~/linglong/company_snapshot.json
+  dedup_windows:
+    关键人物: 14
+    公司动态: 7
+    政策动态: 14
+    应用落地: 7
+
+  # 早报缓存（当天已生成直接返回，避免重复 LLM 调用）
+  brief_output_dir: ~/linglong/briefs
+  brief_schedule_time: "07:30"
+  brief_cache_days: 14
+
+  # RSS 订阅源
+  rss_sources:
+    - name: AIHOT
+      url: https://aihot.virxact.com/feed
+    - name: 36氪
+      url: https://36kr.com/feed
+    # - name: 36氪快讯
+    #   url: http://localhost:1200/36kr/newsflashes
+    - name: 量子位
+      url: https://www.qbitai.com/feed
+    - name: The Rundown AI
+      url: https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml
+    # - name: 财联社电报
+    #   url: http://localhost:1200/cls/telegraph
+    # - name: 财联社深度
+    #   url: http://localhost:1200/cls/depth
+    - name: TechCrunch AI
+      url: https://techcrunch.com/category/artificial-intelligence/feed/
+    - name: The Verge AI
+      url: https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+    # - name: 工信部文件公示
+    #   url: http://localhost:1200/gov/miit/wjgs
+    # - name: 发改委新闻动态
+    #   url: http://localhost:1200/gov/ndrc/xwdt
+
+  # 采集包定义
+  packages:
+    - name: ai-morning-brief
+      topic: AI 早报
+      output:
+        format: morning-brief
+        persist: true
+      search_queries:
+        - keywords:
+            - "Karpathy AI latest opinion 2026"
+            - "Sam Altman OpenAI latest 2026"
+            - "Jensen Huang AI latest 2026"
+          max_results: 3
+          max_age_days: 3
+
+# ── MCP Server ────────────────────────────────
 mcp:
-  transport: "stdio"
+  transport: "stdio"                       # stdio（本地）| streamable-http（远程部署）
   host: "127.0.0.1"
   port: 9900
+  auth_token: ${LL_MCP_AUTH_TOKEN}         # Bearer token（留空或未设置 = 无认证）

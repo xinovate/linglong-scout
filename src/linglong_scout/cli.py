@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def cmd_ingest(args):
-    """Run ingest packages."""
+    """Run scout packages."""
     from linglong_scout.ingest.agent import IngestAgent
     from linglong_scout.ingest.brief_history import BriefHistory
     from linglong_scout.ingest.feedback import FeedbackStore
@@ -45,7 +45,7 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     sub = parser.add_subparsers(dest="command")
 
-    p_ingest = sub.add_parser("ingest", help="Run ingest packages")
+    p_ingest = sub.add_parser("scout", help="Run scout packages")
     p_ingest.set_defaults(func=cmd_ingest)
 
     p_serve = sub.add_parser("serve", help="Run MCP server")

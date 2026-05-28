@@ -33,7 +33,7 @@ class OutputConfig(BaseModel):
 
 
 class SourcePackage(BaseModel):
-    """A topic-agnostic ingest package definition."""
+    """A topic-agnostic scout package definition."""
 
     name: str
     topic: str

@@ -1,4 +1,4 @@
-"""Feedback store — user preference tracking for ingest results."""
+"""Feedback store — user preference tracking for scout results."""
 
 import json
 import logging
@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_feedback_hash ON ingest_feedback(content_hash)
 
 
 class FeedbackStore:
-    """Persist and query user feedback on ingest results."""
+    """Persist and query user feedback on scout results."""
 
     def __init__(self, db_path: str | Path | None = None) -> None:
         if db_path is None:
@@ -50,7 +50,7 @@ class FeedbackStore:
         feedback: str,
         tags: list[str] | None = None,
     ) -> None:
-        """Record feedback for an ingest result.
+        """Record feedback for an scout result.
 
         Args:
             content_hash: Hash identifying the news item.
