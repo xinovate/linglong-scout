@@ -176,6 +176,32 @@ async def _search_all_keywords(package: SourcePackage) -> list[dict[str, str]]:
     return all_results
 
 
+def _denormalize(items: list[dict[str, Any]], source: str) -> list[dict[str, str]]:
+    """Convert normalized raw items back to source-specific format.
+
+    Normalized items have extra fields in "extra" dict. This extracts
+    them back to top-level so format functions can access them directly.
+    """
+    if not items:
+        return items
+    result = []
+    for item in items:
+        flat: dict[str, str] = {
+            "title": item.get("title", ""),
+            "url": item.get("url", ""),
+            "snippet": item.get("snippet", ""),
+        }
+        if source == "rss":
+            flat["source"] = item.get("extra", {}).get("feed_name", "")
+        elif source == "github":
+            extra = item.get("extra", {})
+            flat["stars"] = extra.get("stars", "")
+            flat["growth"] = extra.get("growth", "")
+            flat["period"] = extra.get("period", "")
+        result.append(flat)
+    return result
+
+
 def _format_results(results: list[dict[str, str]]) -> str:
     """Format search results as numbered text for LLM context."""
     lines: list[str] = []
@@ -626,18 +652,25 @@ class IngestAgent:
         self.feedback_store = feedback_store
         self.brief_history = brief_history
 
-    async def run(self, package: SourcePackage) -> str:
-        """Pre-search all keywords, then call LLM once to produce morning brief."""
-        # Step 1-3: Fetch SearXNG, GitHub, RSS concurrently
+    async def collect(self, package: SourcePackage) -> dict[str, Any]:
+        """Fetch all sources and return raw data dict (no LLM call).
+
+        Returns {"searxng": [...], "github": [...], "github_source": str, "rss": [...]}.
+        """
         searxng_results, github_result, rss_items_raw = await asyncio.gather(
             _search_all_keywords(package),
             _github_trending(),
             _fetch_rss_feeds(),
+            return_exceptions=True,
         )
 
         # Process SearXNG results
-        all_results = _dedup_results(searxng_results)
-        _source_health.record("SearXNG", bool(searxng_results), len(all_results))
+        raw_searxng = searxng_results if not isinstance(searxng_results, Exception) else []
+        if isinstance(searxng_results, Exception):
+            _source_health.record("SearXNG", False, 0)
+            logger.warning("SearXNG search failed: %s", searxng_results)
+        all_results = _dedup_results(raw_searxng)
+        _source_health.record("SearXNG", not isinstance(searxng_results, Exception), len(all_results))
         logger.info("After dedup: %d unique SearXNG results", len(all_results))
 
         # Process GitHub results
@@ -648,7 +681,6 @@ class IngestAgent:
         else:
             github_repos, github_source = github_result
             _source_health.record("GitHub", True, len(github_repos))
-        github_text = _format_github(github_repos, github_source)
 
         # Process RSS results (cross-dedup against SearXNG)
         rss_items = rss_items_raw if not isinstance(rss_items_raw, Exception) else []
@@ -659,17 +691,52 @@ class IngestAgent:
             _source_health.record("RSS", True, len(rss_items))
         searxng_urls = {r["url"] for r in all_results}
         rss_items = [r for r in rss_items if r["url"] not in searxng_urls]
-        rss_text = _format_rss(rss_items)
         logger.info("RSS: %d items fetched (after cross-dedup)", len(rss_items))
 
         logger.info(_source_health.summary())
 
+        return {
+            "searxng": all_results,
+            "github": github_repos,
+            "github_source": github_source,
+            "rss": rss_items,
+        }
+
+    async def run(self, package: SourcePackage) -> str:
+        """Full pipeline: collect → store raw → format → LLM → brief."""
+        raw = await self.collect(package)
+        today = date.today().isoformat()
+
+        from linglong.scout.raw_store import store_raw
+        store_raw(
+            target_date=today,
+            searxng=raw["searxng"],
+            github=raw["github"],
+            rss=raw["rss"],
+            github_source=raw["github_source"],
+        )
+
+        return self._generate(package, raw)
+
+    def run_from_raw(self, package: SourcePackage, raw: dict[str, Any]) -> str:
+        """Generate brief from pre-collected raw data (skip collection)."""
+        return self._generate(package, raw)
+
+    def _generate(self, package: SourcePackage, raw: dict[str, Any]) -> str:
+        """Format raw data + call LLM to produce brief."""
+        all_results = _denormalize(raw["searxng"], "searxng")
+        github_repos = _denormalize(raw["github"], "github")
+        github_source = raw.get("github_source", "")
+        rss_items = _denormalize(raw["rss"], "rss")
+
+        today = date.today().isoformat()
+
         if not all_results and not github_repos and not rss_items:
-            today = date.today().isoformat()
             return f"# {package.topic} · {today}\n\n今日暂无搜索结果。"
 
-        # Step 4: Build prompt
         search_text = _format_results(all_results)
+        github_text = _format_github(github_repos, github_source)
+        rss_text = _format_rss(rss_items)
 
         preference_section = ""
         if self.feedback_store:
@@ -683,12 +750,10 @@ class IngestAgent:
             if history_text:
                 history_section = f"\n{history_text}"
 
-        # Step 4.5: Company snapshot
         snapshot = _load_company_snapshot()
         snapshot_text = _format_company_snapshot(snapshot)
 
         prompt_template = _load_prompt()
-        today = date.today().isoformat()
         config = get_config()
         schedule_time = config.ingest.brief_schedule_time
         time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} → {today} {schedule_time}"
@@ -705,7 +770,6 @@ class IngestAgent:
             history_section=history_section,
         )
 
-        # Step 5: Single LLM call (with retry + fallback)
         logger.info(
             "Calling LLM with %d SearXNG + %d GitHub + %d RSS items...",
             len(all_results), len(github_repos), len(rss_items),
@@ -726,7 +790,6 @@ class IngestAgent:
                     )
             raise
 
-        # Step 6: Save to history + dedup quality check
         if self.brief_history:
             sections = parse_sections(output)
             if sections:

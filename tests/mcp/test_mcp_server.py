@@ -8,6 +8,7 @@ import pytest
 from linglong.config import get_config, set_config
 from linglong.mcp.tools import (
     execute_package,
+    fetch_raw,
     fetch_rss,
     generate_brief,
     search_web,
@@ -94,6 +95,7 @@ def test_generate_brief_returns_output():
 
     with patch("linglong.scout.cache.get_brief", return_value=None), \
          patch("linglong.scout.cache.set_brief"), \
+         patch("linglong.scout.raw_store.has_raw", return_value=False), \
          patch("linglong.scout.agent.IngestAgent") as mock_agent_cls, \
          patch("linglong.scout.brief_history.BriefHistory") as mock_bh_cls, \
          patch("linglong.scout.feedback.FeedbackStore") as mock_fs_cls, \
@@ -128,6 +130,7 @@ def test_generate_brief_handles_error():
     set_config(config)
 
     with patch("linglong.scout.cache.get_brief", return_value=None), \
+         patch("linglong.scout.raw_store.has_raw", return_value=False), \
          patch("linglong.scout.agent.IngestAgent", side_effect=Exception("Agent failed")):
         result = generate_brief()
         data = json.loads(result)
@@ -199,3 +202,38 @@ def test_execute_package_handles_error():
         data = json.loads(result)
 
     assert "error" in data
+
+
+# --- fetch_raw ---
+
+
+def test_fetch_raw_returns_data():
+    with patch("linglong.scout.raw_store.get_raw", return_value={
+        "searxng": [{"title": "test", "url": "https://example.com", "snippet": "s", "source": "searxng", "fetched_at": "t", "extra": {}}],
+        "rss": [],
+        "github": [],
+    }), \
+         patch("linglong.scout.raw_store.get_raw_meta", return_value={"fetched_at": "2026-05-28T06:55:00Z"}):
+        result = fetch_raw(target_date="2026-05-28")
+        data = json.loads(result)
+
+    assert "error" not in data
+    assert data["date"] == "2026-05-28"
+    assert "searxng" in data["sources"]
+    assert data["sources"]["searxng"]["count"] == 1
+
+
+def test_fetch_raw_invalid_source():
+    result = fetch_raw(target_date="2026-05-28", source="invalid")
+    data = json.loads(result)
+    assert "error" in data
+
+
+def test_fetch_raw_no_data():
+    with patch("linglong.scout.raw_store.get_raw", return_value={"searxng": [], "rss": [], "github": []}), \
+         patch("linglong.scout.raw_store.get_raw_meta", return_value={}):
+        result = fetch_raw(target_date="2026-05-28")
+        data = json.loads(result)
+
+    assert "warning" in data
+    assert data["date"] == "2026-05-28"

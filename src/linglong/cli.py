@@ -40,8 +40,22 @@ def cmd_brief(args):
     brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
     agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
 
+    from linglong.scout.raw_store import get_raw, get_raw_meta, has_raw
+
     print(f"Generating brief for {today}...", file=sys.stderr)
-    output = asyncio.run(agent.run(package))
+
+    if has_raw(today):
+        raw_data = get_raw(today)
+        meta = get_raw_meta(today)
+        raw = {
+            "searxng": raw_data.get("searxng", []),
+            "github": raw_data.get("github", []),
+            "github_source": meta.get("github_source", ""),
+            "rss": raw_data.get("rss", []),
+        }
+        output = agent.run_from_raw(package, raw)
+    else:
+        output = asyncio.run(agent.run(package))
 
     if output:
         set_brief(output, today)
@@ -76,6 +90,39 @@ def cmd_ingest(args):
         print(output)
 
 
+def cmd_collect(args):
+    """Collect raw data without generating brief."""
+    import asyncio
+    import json
+    from datetime import date
+
+    from linglong.config import get_config
+    from linglong.scout.agent import IngestAgent
+    from linglong.scout.package import SourcePackage
+    from linglong.scout.raw_store import store_raw
+
+    config = get_config()
+    if not config.ingest.packages:
+        print("No packages configured in .scout.yml", file=sys.stderr)
+        sys.exit(1)
+
+    package = SourcePackage(**config.ingest.packages[0])
+    agent = IngestAgent()
+    raw = asyncio.run(agent.collect(package))
+
+    today = date.today().isoformat()
+    counts = store_raw(
+        target_date=today,
+        searxng=raw["searxng"],
+        github=raw["github"],
+        rss=raw["rss"],
+        github_source=raw["github_source"],
+    )
+
+    total = sum(counts.values())
+    print(f"Collected {total} items for {today}: {json.dumps(counts)}")
+
+
 def cmd_serve(args):
     """Run MCP server."""
     from linglong.mcp import main as mcp_main
@@ -97,6 +144,9 @@ def main():
 
     p_ingest = sub.add_parser("scout", help="Run scout packages")
     p_ingest.set_defaults(func=cmd_ingest)
+
+    p_collect = sub.add_parser("collect", help="Collect raw data only (no LLM)")
+    p_collect.set_defaults(func=cmd_collect)
 
     p_serve = sub.add_parser("serve", help="Run MCP server")
     p_serve.set_defaults(func=cmd_serve)

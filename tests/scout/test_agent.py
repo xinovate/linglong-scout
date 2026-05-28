@@ -96,7 +96,9 @@ class TestIngestAgent:
         with patch("linglong.scout.agent._searxng_search", new_callable=AsyncMock, return_value=mock_search_results), \
              patch("linglong.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
              patch("linglong.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong.scout.agent._call_llm", return_value="# AI 早报 · 2026-05-25\n\nMorning brief content"):
+             patch("linglong.scout.agent._call_llm", return_value="# AI 早报 · 2026-05-25\n\nMorning brief content"), \
+             patch("linglong.scout.raw_store.store_raw") as mock_store:
+            mock_store.return_value = {"searxng": 2}
             output = await agent.run(pkg)
 
         assert "AI 早报" in output
@@ -108,7 +110,9 @@ class TestIngestAgent:
 
         with patch("linglong.scout.agent._searxng_search", new_callable=AsyncMock, return_value=[]), \
              patch("linglong.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
-             patch("linglong.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]):
+             patch("linglong.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
+             patch("linglong.scout.raw_store.store_raw") as mock_store:
+            mock_store.return_value = {}
             output = await agent.run(pkg)
 
         assert "暂无搜索结果" in output
@@ -126,7 +130,9 @@ class TestIngestAgent:
         with patch("linglong.scout.agent._searxng_search", side_effect=mock_search), \
              patch("linglong.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
              patch("linglong.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong.scout.agent._call_llm", return_value="# AI 早报"):
+             patch("linglong.scout.agent._call_llm", return_value="# AI 早报"), \
+             patch("linglong.scout.raw_store.store_raw") as mock_store:
+            mock_store.return_value = {"searxng": 1}
             output = await agent.run(pkg)
 
         assert "AI 早报" in output
@@ -146,13 +152,49 @@ class TestIngestAgent:
         with patch("linglong.scout.agent._searxng_search", new_callable=AsyncMock, return_value=mock_results), \
              patch("linglong.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
              patch("linglong.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong.scout.agent._call_llm", return_value="# AI 早报") as mock_llm:
+             patch("linglong.scout.agent._call_llm", return_value="# AI 早报") as mock_llm, \
+             patch("linglong.scout.raw_store.store_raw") as mock_store:
+            mock_store.return_value = {"searxng": 1}
             await agent.run(pkg)
 
         # Verify preference text was passed to LLM
         call_args = mock_llm.call_args
         system_prompt = call_args[0][0] if call_args[0] else call_args[1].get("system", "")
         assert "偏好" in system_prompt
+
+    @pytest.mark.asyncio
+    async def test_collect_returns_raw_dict(self):
+        pkg = _make_package()
+        agent = IngestAgent()
+
+        with patch("linglong.scout.agent._searxng_search", new_callable=AsyncMock, return_value=[
+            {"title": "T", "url": "https://t.com", "snippet": "s"},
+        ]), \
+             patch("linglong.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "opengithubs")), \
+             patch("linglong.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]):
+            raw = await agent.collect(pkg)
+
+        assert "searxng" in raw
+        assert "github" in raw
+        assert "rss" in raw
+        assert "github_source" in raw
+        assert len(raw["searxng"]) == 1
+
+    def test_run_from_raw_skips_collection(self):
+        pkg = _make_package()
+        agent = IngestAgent()
+
+        raw = {
+            "searxng": [{"title": "T", "url": "https://t.com", "snippet": "s"}],
+            "github": [],
+            "github_source": "",
+            "rss": [],
+        }
+
+        with patch("linglong.scout.agent._call_llm", return_value="# AI 早报"):
+            output = agent.run_from_raw(pkg, raw)
+
+        assert "AI 早报" in output
 
 
 class TestParseOpengithub:
@@ -422,7 +464,9 @@ class TestLlmRetry:
         with patch("linglong.scout.agent._searxng_search", new_callable=AsyncMock, return_value=mock_results), \
              patch("linglong.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
              patch("linglong.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong.scout.agent._call_llm", side_effect=Exception("API error")):
+             patch("linglong.scout.agent._call_llm", side_effect=Exception("API error")), \
+             patch("linglong.scout.raw_store.store_raw") as mock_store:
+            mock_store.return_value = {"searxng": 1}
             with pytest.raises(Exception, match="API error"):
                 await agent.run(pkg)
 
@@ -455,7 +499,9 @@ class TestLlmRetry:
              patch("linglong.scout.agent._searxng_search", new_callable=AsyncMock, return_value=[{"title": "T", "url": "https://t.com", "snippet": "s"}]), \
              patch("linglong.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
              patch("linglong.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong.scout.agent._call_llm", side_effect=Exception("API error")):
+             patch("linglong.scout.agent._call_llm", side_effect=Exception("API error")), \
+             patch("linglong.scout.raw_store.store_raw") as mock_store:
+            mock_store.return_value = {"searxng": 1}
             history = BriefHistory()
             history.save("2026-05-24", {"关键人物": "Some content"})
 

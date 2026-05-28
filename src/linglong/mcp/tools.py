@@ -137,10 +137,11 @@ def execute_package(package_path: str) -> str:
 
 
 def generate_brief() -> str:
-    """Execute an scout package (YAML-defined collection of sources).
+    """Generate morning brief from collected data.
 
-    Returns collected entities for discussion. Use write_entity to save
-    selected results to the knowledge store.
+    If raw data already exists in Redis for today, skips collection and
+    feeds existing data to LLM. Otherwise collects fresh, stores raw data,
+    then generates the brief.
     """
     try:
         from datetime import date
@@ -150,6 +151,7 @@ def generate_brief() -> str:
         from linglong.scout.cache import get_brief, set_brief
         from linglong.scout.feedback import FeedbackStore
         from linglong.scout.package import SourcePackage
+        from linglong.scout.raw_store import get_raw, get_raw_meta, has_raw
 
         config = get_config()
         if not config.ingest.packages:
@@ -173,7 +175,19 @@ def generate_brief() -> str:
         feedback_store = FeedbackStore()
         brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
         agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
-        output = _run_async(agent.run(package))
+
+        if has_raw(today):
+            raw_data = get_raw(today)
+            meta = get_raw_meta(today)
+            raw = {
+                "searxng": raw_data.get("searxng", []),
+                "github": raw_data.get("github", []),
+                "github_source": meta.get("github_source", ""),
+                "rss": raw_data.get("rss", []),
+            }
+            output = agent.run_from_raw(package, raw)
+        else:
+            output = _run_async(agent.run(package))
 
         if output:
             set_brief(output, today)
@@ -231,4 +245,45 @@ def search_web(query: str, max_results: int = 10) -> str:
         )
     except Exception as exc:
         logger.exception("search_web failed")
+        return json.dumps({"error": str(exc)}, ensure_ascii=False)
+
+
+def fetch_raw(target_date: str | None = None, source: str | None = None) -> str:
+    """Fetch structured raw data collected for a given date.
+
+    Returns raw collected data (SearXNG search results, GitHub trending,
+    RSS items) as structured JSON. Useful for inspecting data before
+    brief generation or for custom analysis.
+
+    Args:
+        target_date: ISO date string (e.g. "2026-05-28"). Defaults to today.
+        source: Filter to a specific source: "searxng", "rss", or "github".
+    """
+    try:
+        from datetime import date
+
+        from linglong.scout.raw_store import get_raw, get_raw_meta
+
+        d = target_date or date.today().isoformat()
+
+        if source and source not in ("searxng", "rss", "github"):
+            return json.dumps(
+                {"error": f"Invalid source '{source}'. Use: searxng, rss, github"},
+                ensure_ascii=False,
+            )
+
+        data = get_raw(target_date=d, source=source)
+        meta = get_raw_meta(target_date=d)
+
+        result: dict[str, Any] = {"date": d, "meta": meta, "sources": {}}
+        for src, items in data.items():
+            if items:
+                result["sources"][src] = {"count": len(items), "items": items}
+
+        if not any(data.values()):
+            result["warning"] = "No raw data found for this date"
+
+        return json.dumps(result, ensure_ascii=False)
+    except Exception as exc:
+        logger.exception("fetch_raw failed")
         return json.dumps({"error": str(exc)}, ensure_ascii=False)

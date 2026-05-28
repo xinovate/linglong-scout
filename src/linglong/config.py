@@ -94,6 +94,15 @@ class IngestConfig(BaseSettings):
         description="Daily brief schedule time (HH:MM), used for time range markers",
     )
 
+    raw_data_dir: str = Field(
+        default="~/linglong/data/raw",
+        description="Directory for cold raw data storage (JSON files)",
+    )
+    raw_redis_ttl_days: int = Field(
+        default=14,
+        description="TTL in days for raw data in Redis",
+    )
+
 
 class MCPConfig(BaseModel):
     """MCP server configuration."""
