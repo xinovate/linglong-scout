@@ -6,7 +6,7 @@
 
 ## 概述
 
-ingest 通过 MCP Server 暴露工具，支持本地（stdio）和远程（streamable-http）两种接入方式。
+Linglong Scout 通过 MCP Server 暴露采集工具，同时提供 CLI 命令供 cron 调用。支持本地（stdio）和远程（streamable-http）两种接入方式。
 
 ---
 
@@ -89,6 +89,36 @@ graph LR
 
 ---
 
+## CLI 命令
+
+除了 MCP 工具，还提供 CLI 命令供 cron 和手动调用：
+
+```bash
+# 生成早报（供 cron 触发）
+linglong-scout brief          # 有缓存则直接返回
+linglong-scout brief --force  # 强制重新生成
+
+# 手动运行采集包
+linglong-scout scout
+
+# 启动 MCP 服务
+linglong-scout serve
+```
+
+`brief` 命令的缓存逻辑：检查 Redis `scout:brief:{date}`，命中则直接输出，未命中则完整采集 + LLM 生成后写入 Redis（TTL 25h）。
+
+---
+
+## 日志
+
+CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
+
+- RotatingFileHandler：5MB × 3 备份，写入 `~/linglong/logs/scout.log`
+- StreamHandler：同时输出到 stderr
+- CLI `-v` 参数可切换为 DEBUG 级别
+
+---
+
 ## 已知注意事项
 
 - `generate_brief()` 内部用 `_run_async()` (ThreadPoolExecutor) 运行 async 函数，MCP server 有自己的事件循环
@@ -103,7 +133,9 @@ graph LR
 | 文件 | 说明 |
 |------|------|
 | `src/linglong/mcp/server.py` | FastMCP 工厂 + 工具注册 |
-| `src/linglong/mcp/__main__.py` | 按 transport 启动 |
+| `src/linglong/mcp/__main__.py` | 按 transport 启动，含日志初始化 |
 | `src/linglong/mcp/_auth.py` | Token 认证中间件 |
-| `src/linglong/mcp/tools.py` | 5 个 MCP 工具实现 |
+| `src/linglong/mcp/tools.py` | 5 个 MCP 工具实现（含 Redis 缓存） |
+| `src/linglong/cli.py` | CLI 入口：brief / scout / serve |
+| `src/linglong/config.py` | 配置模型 + `setup_logging()` |
 | `deploy/linglong-scout-mcp.service` | systemd 守护配置 |

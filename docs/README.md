@@ -83,13 +83,14 @@ graph TD
 
 ### 缓存机制
 
-`generate_brief()` 支持日内缓存：当天已生成的早报直接返回，避免重复 LLM 调用。
+`generate_brief()` 支持日内缓存：当天已生成的早报直接从 Redis 返回，避免重复 LLM 调用。
 
 | 配置 | 默认值 | 说明 |
 |------|--------|------|
-| `brief_output_dir` | `~/linglong/briefs` | 缓存目录，按日期存 `{YYYY-MM-DD}.md` |
+| `mcp.redis_url` | `""` | Redis 连接地址（如 `redis://localhost:6379/0`） |
 | `brief_schedule_time` | `07:30` | 播报时段标记（如 `2026-05-25 07:30 → 2026-05-26 07:30`） |
-| `brief_cache_days` | `14` | 缓存保留天数 |
+
+Redis 数据结构：`scout:brief:{date}`（TTL 25h）+ `scout:history:{date}`（TTL 16d）。
 
 ## 核心组件
 
@@ -204,13 +205,24 @@ mcp:
 ## 调用方式
 
 ```bash
-# CLI — 生成早报
+# CLI — 定时早报（供 cron）
+linglong-scout brief          # 有缓存直接返回
+linglong-scout brief --force  # 强制重新生成
+
+# CLI — 手动运行采集包
 linglong-scout scout
+
+# CLI — 启动 MCP 服务
+linglong-scout serve
 
 # MCP — Agent 在对话中按需采集
 # execute_package(path) → 查看结果 → 讨论 → 记录有价值内容
 # record_feedback(hash, feedback) → 记录偏好
 ```
+
+### 日志
+
+CLI 和 MCP 入口统一使用 RotatingFileHandler（5MB × 3 备份），日志路径 `~/linglong/logs/scout.log`。CLI 加 `-v` 切换 DEBUG 级别。
 
 ## 配置
 
