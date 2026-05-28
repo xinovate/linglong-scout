@@ -1,0 +1,19 @@
+debug: false
+log_level: "INFO"
+data_dir: ~/linglong/data
+
+llm:
+  api_key: ""         # Or set LL_SCOUT_LLM_API_KEY
+  base_url: "https://open.bigmodel.cn/api/anthropic"
+  model: "glm-5.1"
+
+ingest:
+  rss_sources: []
+  searxng_url: "http://localhost:8088"
+  search_timeout: 30.0
+  packages: []
+
+mcp:
+  transport: "stdio"
+  host: "127.0.0.1"
+  port: 9900
