@@ -6,7 +6,7 @@
 - 全量：`.venv/bin/pytest`
 - 指定模块：`.venv/bin/pytest tests/ingest/ -v`
 - 单个测试：`.venv/bin/pytest tests/ingest/test_agent.py::test_generate_brief -v`
-- 覆盖率：`.venv/bin/pytest --cov=linglong_scout --cov-report=term-missing`
+- 覆盖率：`.venv/bin/pytest --cov=linglong --cov-report=term-missing`
 
 ## 文件与命名
 
@@ -51,7 +51,7 @@ async def test_search_web(mock_get):
     mock_get.return_value = MagicMock(json=lambda: {"results": [...]})
 
 # 坏：mock 内部业务函数
-@patch("linglong_scout.scout.agent.IngestAgent._build_prompt")
+@patch("linglong.scout.agent.IngestAgent._build_prompt")
 async def test_search_web(mock_prompt):
     ...
 ```

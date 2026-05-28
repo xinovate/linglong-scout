@@ -56,7 +56,7 @@ def fetch_feed(url: str, timeout: int = 30) -> dict:
 
 ## 导入
 
-- 顺序：标准库 → 第三方库 → 本项目模块（`linglong_scout.*`）
+- 顺序：标准库 → 第三方库 → 本项目模块（`linglong.*`）
 - 每组之间空一行
 - 禁止通配符导入（`from module import *`）
 - 禁止相对导入（`from .. import x`），用完整包路径

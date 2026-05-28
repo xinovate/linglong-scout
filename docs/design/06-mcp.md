@@ -14,7 +14,7 @@ ingest 通过 MCP Server 暴露工具，支持本地（stdio）和远程（strea
 
 ```mermaid
 flowchart TD
-    START(["python -m linglong_scout.mcp"]) --> CONFIG["get_config()"]
+    START(["python -m linglong.mcp"]) --> CONFIG["get_config()"]
     CONFIG --> CREATE["create_server()"]
     CREATE --> REGISTER["_INGEST_TOOLS 注册"]
     REGISTER --> TRANSPORT{mcp.transport?}
@@ -75,13 +75,13 @@ sequenceDiagram
 ```mermaid
 graph LR
     subgraph 本地["stdio 模式（本地）"]
-        CC["Claude Code"] -->|子进程| MCP1["linglong_scout.mcp<br/>stdio 管道"]
+        CC["Claude Code"] -->|子进程| MCP1["linglong.mcp<br/>stdio 管道"]
         OC["OpenClaw"] -->|子进程| MCP1
     end
 
     subgraph 远程["streamable-http 模式（服务器）"]
         OC2["OpenClaw"] -->|HTTP + Bearer Token| NGINX["Nginx (可选)"]
-        NGINX --> MCP2["linglong_scout.mcp :9900<br/>TokenAuthMiddleware"]
+        NGINX --> MCP2["linglong.mcp :9900<br/>TokenAuthMiddleware"]
         MCP2 --> SEARXNG["SearXNG"]
         MCP2 --> LLM["LLM API"]
     end
@@ -102,8 +102,8 @@ graph LR
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong_scout/mcp/server.py` | FastMCP 工厂 + 工具注册 |
-| `src/linglong_scout/mcp/__main__.py` | 按 transport 启动 |
-| `src/linglong_scout/mcp/_auth.py` | Token 认证中间件 |
-| `src/linglong_scout/mcp/tools.py` | 5 个 MCP 工具实现 |
+| `src/linglong/mcp/server.py` | FastMCP 工厂 + 工具注册 |
+| `src/linglong/mcp/__main__.py` | 按 transport 启动 |
+| `src/linglong/mcp/_auth.py` | Token 认证中间件 |
+| `src/linglong/mcp/tools.py` | 5 个 MCP 工具实现 |
 | `deploy/linglong-scout-mcp.service` | systemd 守护配置 |

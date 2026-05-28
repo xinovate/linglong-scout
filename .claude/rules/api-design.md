@@ -90,8 +90,8 @@ async def search_web(
 
 ## 新增工具 Checklist
 
-1. 在 `src/linglong_scout/<模块>/` 实现工具函数
-2. 在 `src/linglong_scout/mcp/server.py` 的 `_INGEST_TOOLS` 中注册
+1. 在 `src/linglong/<模块>/` 实现工具函数
+2. 在 `src/linglong/mcp/server.py` 的 `_INGEST_TOOLS` 中注册
 3. 编写单元测试：正常路径 + 至少一个错误路径
 4. 更新 MCP 工具表（名称、描述、参数、返回格式）
 5. 确认测试通过

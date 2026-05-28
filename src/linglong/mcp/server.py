@@ -6,8 +6,8 @@ from starlette.applications import Starlette
 
 from mcp.server.fastmcp import FastMCP
 
-from linglong_scout.config import get_config
-from linglong_scout.mcp.tools import (
+from linglong.config import get_config
+from linglong.mcp.tools import (
     execute_package,
     fetch_rss,
     generate_brief,

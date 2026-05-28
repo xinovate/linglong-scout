@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from linglong_scout.scout.package import (
+from linglong.scout.package import (
     OutputConfig,
     SearchQueryConfig,
     SourcePackage,

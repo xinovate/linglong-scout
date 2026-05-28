@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=linglong
 WorkingDirectory=/opt/linglong-scout
-ExecStart=/opt/linglong-scout/.venv/bin/python -m linglong_scout.mcp
+ExecStart=/opt/linglong-scout/.venv/bin/python -m linglong.mcp
 Restart=always
 RestartSec=5
 

@@ -15,10 +15,10 @@ from typing import Any
 import feedparser
 import httpx
 
-from linglong_scout.config import get_config
-from linglong_scout.scout.brief_history import BriefHistory, parse_sections
-from linglong_scout.scout.feedback import FeedbackStore
-from linglong_scout.scout.package import SourcePackage
+from linglong.config import get_config
+from linglong.scout.brief_history import BriefHistory, parse_sections
+from linglong.scout.feedback import FeedbackStore
+from linglong.scout.package import SourcePackage
 
 logger = logging.getLogger(__name__)
 

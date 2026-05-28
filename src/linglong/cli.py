@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 def cmd_ingest(args):
     """Run scout packages."""
-    from linglong_scout.scout.agent import IngestAgent
-    from linglong_scout.scout.brief_history import BriefHistory
-    from linglong_scout.scout.feedback import FeedbackStore
-    from linglong_scout.scout.package import SourcePackage
-    from linglong_scout.config import get_config
+    from linglong.scout.agent import IngestAgent
+    from linglong.scout.brief_history import BriefHistory
+    from linglong.scout.feedback import FeedbackStore
+    from linglong.scout.package import SourcePackage
+    from linglong.config import get_config
     from pathlib import Path
 
     config = get_config()
@@ -35,7 +35,7 @@ def cmd_ingest(args):
 
 def cmd_serve(args):
     """Run MCP server."""
-    from linglong_scout.mcp import main as mcp_main
+    from linglong.mcp import main as mcp_main
     mcp_main()
 
 

@@ -14,4 +14,4 @@ EXPOSE 9900
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
     CMD python -c "import httpx; httpx.get('http://localhost:9900/mcp/scout', timeout=3)" || exit 1
 
-CMD ["python", "-m", "linglong_scout.mcp"]
+CMD ["python", "-m", "linglong.mcp"]

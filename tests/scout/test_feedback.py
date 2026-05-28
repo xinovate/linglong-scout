@@ -4,7 +4,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from linglong_scout.scout.feedback import FeedbackStore
+from linglong.scout.feedback import FeedbackStore
 
 
 def _make_store(tmpdir: Path) -> FeedbackStore:
@@ -60,7 +60,7 @@ class TestMCPRecordFeedback:
     """Tests for MCP record_feedback tool function."""
 
     def test_record_useful(self, tmp_path):
-        from linglong_scout.mcp.tools import record_feedback
+        from linglong.mcp.tools import record_feedback
 
         store = _make_store(tmp_path)
         with patch_store(store):
@@ -68,13 +68,13 @@ class TestMCPRecordFeedback:
         assert result["status"] == "recorded"
 
     def test_record_invalid_feedback(self):
-        from linglong_scout.mcp.tools import record_feedback
+        from linglong.mcp.tools import record_feedback
 
         result = json.loads(record_feedback("hash_abc", "maybe"))
         assert "error" in result
 
     def test_record_not_interested(self, tmp_path):
-        from linglong_scout.mcp.tools import record_feedback
+        from linglong.mcp.tools import record_feedback
 
         store = _make_store(tmp_path)
         with patch_store(store):
@@ -85,4 +85,4 @@ class TestMCPRecordFeedback:
 def patch_store(store: FeedbackStore):
     """Context manager to patch FeedbackStore() to return a specific instance."""
     from unittest.mock import patch
-    return patch("linglong_scout.scout.feedback.FeedbackStore", return_value=store)
+    return patch("linglong.scout.feedback.FeedbackStore", return_value=store)

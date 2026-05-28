@@ -56,4 +56,4 @@ ingest 不做调度，由调用方处理：
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong_scout/mcp/tools.py` | `generate_brief()` 缓存逻辑 |
+| `src/linglong/mcp/tools.py` | `generate_brief()` 缓存逻辑 |

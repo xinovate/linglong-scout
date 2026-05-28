@@ -3,21 +3,21 @@
 # 但本次 commit 没有改动对应 docs，则输出提醒。
 
 mappings:
-  - code: src/linglong_scout/scout/
+  - code: src/linglong/scout/
     docs:
       - docs/README.md
       - docs/design/
 
-  - code: src/linglong_scout/mcp/
+  - code: src/linglong/mcp/
     docs:
       - docs/README.md
       - docs/design/06-mcp.md
 
-  - code: src/linglong_scout/config.py
+  - code: src/linglong/config.py
     docs:
       - docs/README.md
       - .scout.example.yml
 
-  - code: src/linglong_scout/cli.py
+  - code: src/linglong/cli.py
     docs:
       - docs/README.md

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from linglong_scout.scout.brief_history import BriefHistory, parse_sections
+from linglong.scout.brief_history import BriefHistory, parse_sections
 
 
 _SAMPLE_OUTPUT = """# AI 早报 · 2026-05-25

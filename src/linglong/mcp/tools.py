@@ -5,7 +5,7 @@ import json
 import logging
 from typing import Any
 
-from linglong_scout.config import get_config
+from linglong.config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def record_feedback(
         tags: Tags associated with the news item (optional).
     """
     try:
-        from linglong_scout.scout.feedback import FeedbackStore
+        from linglong.scout.feedback import FeedbackStore
 
         store = FeedbackStore()
         if feedback not in ("useful", "not_interested"):
@@ -111,10 +111,10 @@ def execute_package(package_path: str) -> str:
     try:
         from pathlib import Path
 
-        from linglong_scout.scout.agent import IngestAgent
-        from linglong_scout.scout.brief_history import BriefHistory
-        from linglong_scout.scout.feedback import FeedbackStore
-        from linglong_scout.scout.package import SourcePackage
+        from linglong.scout.agent import IngestAgent
+        from linglong.scout.brief_history import BriefHistory
+        from linglong.scout.feedback import FeedbackStore
+        from linglong.scout.package import SourcePackage
 
         package = SourcePackage.from_yaml(package_path)
 
@@ -147,10 +147,10 @@ def generate_brief() -> str:
         from datetime import date, timedelta
         from pathlib import Path
 
-        from linglong_scout.scout.agent import IngestAgent
-        from linglong_scout.scout.brief_history import BriefHistory
-        from linglong_scout.scout.feedback import FeedbackStore
-        from linglong_scout.scout.package import SourcePackage
+        from linglong.scout.agent import IngestAgent
+        from linglong.scout.brief_history import BriefHistory
+        from linglong.scout.feedback import FeedbackStore
+        from linglong.scout.package import SourcePackage
 
         config = get_config()
         if not config.ingest.packages:

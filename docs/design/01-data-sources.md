@@ -87,5 +87,5 @@ IngestAgent.run()
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong_scout/scout/agent.py` | `_search_all_keywords()` / `_github_trending()` / `_fetch_rss_feeds()` |
+| `src/linglong/scout/agent.py` | `_search_all_keywords()` / `_github_trending()` / `_fetch_rss_feeds()` |
 | `.scout.yml` | RSS 源列表、搜索关键词、SearXNG/RSSHub 配置 |

@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from linglong_scout.config import get_config, set_config
-from linglong_scout.mcp.tools import (
+from linglong.config import get_config, set_config
+from linglong.mcp.tools import (
     execute_package,
     fetch_rss,
     generate_brief,
@@ -71,7 +71,7 @@ def test_fetch_rss_rsshub_key_only_for_rsshub_urls():
     config_mock.ingest.rsshub_access_key = "test-key"
 
     with patch("httpx.AsyncClient", return_value=mock_client), \
-         patch("linglong_scout.mcp.tools.get_config", return_value=config_mock):
+         patch("linglong.mcp.tools.get_config", return_value=config_mock):
         # Non-RSSHub URL should NOT get key
         fetch_rss("https://techcrunch.com/feed/")
         called_url = mock_client.get.call_args.args[0]
@@ -92,9 +92,9 @@ def test_generate_brief_returns_output():
     config.ingest.packages = [{"name": "ai-morning-brief", "topic": "AI 早报"}]
     set_config(config)
 
-    with patch("linglong_scout.scout.agent.IngestAgent") as mock_agent_cls, \
-         patch("linglong_scout.scout.brief_history.BriefHistory") as mock_bh_cls, \
-         patch("linglong_scout.scout.feedback.FeedbackStore") as mock_fs_cls, \
+    with patch("linglong.scout.agent.IngestAgent") as mock_agent_cls, \
+         patch("linglong.scout.brief_history.BriefHistory") as mock_bh_cls, \
+         patch("linglong.scout.feedback.FeedbackStore") as mock_fs_cls, \
          patch("asyncio.run", return_value="# AI 早报\n\nContent"):
         mock_agent = MagicMock()
         mock_agent.run = AsyncMock(return_value="# AI 早报\n\nContent")
@@ -126,7 +126,7 @@ def test_generate_brief_handles_error(tmp_path):
     config.ingest.brief_output_dir = str(tmp_path / "briefs")
     set_config(config)
 
-    with patch("linglong_scout.scout.agent.IngestAgent", side_effect=Exception("Agent failed")):
+    with patch("linglong.scout.agent.IngestAgent", side_effect=Exception("Agent failed")):
         result = generate_brief()
         data = json.loads(result)
 
@@ -172,10 +172,10 @@ def test_search_web_handles_error():
 
 
 def test_execute_package_returns_results():
-    with patch("linglong_scout.scout.package.SourcePackage") as mock_pkg_cls, \
-         patch("linglong_scout.scout.agent.IngestAgent") as mock_agent_cls, \
-         patch("linglong_scout.scout.brief_history.BriefHistory") as mock_bh_cls, \
-         patch("linglong_scout.scout.feedback.FeedbackStore") as mock_fs_cls, \
+    with patch("linglong.scout.package.SourcePackage") as mock_pkg_cls, \
+         patch("linglong.scout.agent.IngestAgent") as mock_agent_cls, \
+         patch("linglong.scout.brief_history.BriefHistory") as mock_bh_cls, \
+         patch("linglong.scout.feedback.FeedbackStore") as mock_fs_cls, \
          patch("asyncio.run", return_value="# AI 早报\n\nContent"):
         mock_pkg = MagicMock()
         mock_pkg.name = "test-package"
@@ -190,7 +190,7 @@ def test_execute_package_returns_results():
 
 
 def test_execute_package_handles_error():
-    with patch("linglong_scout.scout.package.SourcePackage") as mock_cls:
+    with patch("linglong.scout.package.SourcePackage") as mock_cls:
         mock_cls.from_yaml.side_effect = FileNotFoundError("Package not found")
 
         result = execute_package("/nonexistent/package.yaml")

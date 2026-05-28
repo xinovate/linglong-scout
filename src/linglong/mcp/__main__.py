@@ -1,9 +1,9 @@
-"""Entry point for python -m linglong_scout.mcp."""
+"""Entry point for python -m linglong.mcp."""
 
 import logging
 
-from linglong_scout.config import get_config
-from linglong_scout.mcp.server import create_http_app, create_server
+from linglong.config import get_config
+from linglong.mcp.server import create_http_app, create_server
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def _run_http(config) -> None:
         app = create_http_app()
 
         if config.mcp.auth_token or config.mcp.redis_url:
-            from linglong_scout.mcp._auth import TokenAuthMiddleware
+            from linglong.mcp._auth import TokenAuthMiddleware
 
             app.add_middleware(
                 TokenAuthMiddleware,

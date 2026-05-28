@@ -95,11 +95,11 @@ graph TD
 
 | 组件 | 路径 | 说明 |
 |------|------|------|
-| `IngestAgent` | `src/linglong_scout/scout/agent.py` | LLM Agent：预搜索 + 单 prompt → markdown |
-| `BriefHistory` | `src/linglong_scout/scout/brief_history.py` | 按维度跨天去重 + 重叠检测 + fallback 输出 |
-| `SourcePackage` | `src/linglong_scout/scout/package.py` | 采集包定义模型（内联在 .scout.yml） |
-| `FeedbackStore` | `src/linglong_scout/scout/feedback.py` | 用户偏好存储 + 权重计算 |
-| `SourceHealth` | `src/linglong_scout/scout/agent.py` | 信源健康监控（成功率 + 连续失败告警） |
+| `IngestAgent` | `src/linglong/scout/agent.py` | LLM Agent：预搜索 + 单 prompt → markdown |
+| `BriefHistory` | `src/linglong/scout/brief_history.py` | 按维度跨天去重 + 重叠检测 + fallback 输出 |
+| `SourcePackage` | `src/linglong/scout/package.py` | 采集包定义模型（内联在 .scout.yml） |
+| `FeedbackStore` | `src/linglong/scout/feedback.py` | 用户偏好存储 + 权重计算 |
+| `SourceHealth` | `src/linglong/scout/agent.py` | 信源健康监控（成功率 + 连续失败告警） |
 | `company_snapshot.json` | `~/linglong/` | 中美 14 家 AI 公司融资/估值快照（外部维护） |
 
 ## MCP 工具
@@ -127,7 +127,7 @@ graph TD
   "mcpServers": {
     "linglong-scout": {
       "command": "bash",
-      "args": ["-c", "cd /path/to/linglong-scout && .venv/bin/python -m linglong_scout.mcp"],
+      "args": ["-c", "cd /path/to/linglong-scout && .venv/bin/python -m linglong.mcp"],
       "env": {
         "ZHIPU_API_KEY": "your-key",
         "SEARXNG_API_KEY": "your-key",
@@ -150,7 +150,7 @@ graph TD
     "servers": {
       "linglong-scout": {
         "command": "bash",
-        "args": ["-c", "cd /path/to/linglong-scout && .venv/bin/python -m linglong_scout.mcp"]
+        "args": ["-c", "cd /path/to/linglong-scout && .venv/bin/python -m linglong.mcp"]
       }
     }
   }
@@ -175,7 +175,7 @@ mcp:
   auth_token: ${LL_MCP_AUTH_TOKEN}    # Bearer token（必须设置）
 ```
 
-启动：`python -m linglong_scout.mcp`（或用 systemd 守护，参考 `deploy/linglong-scout-mcp.service`）
+启动：`python -m linglong.mcp`（或用 systemd 守护，参考 `deploy/linglong-scout-mcp.service`）
 
 #### 2. OpenClaw 远程接入
 
