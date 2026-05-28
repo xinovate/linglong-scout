@@ -3,7 +3,7 @@
 # 但本次 commit 没有改动对应 docs，则输出提醒。
 
 mappings:
-  - code: src/linglong_scout/ingest/
+  - code: src/linglong_scout/scout/
     docs:
       - docs/README.md
       - docs/design/

@@ -6,7 +6,7 @@
 
 ## 概述
 
-早报生成使用单次 LLM prompt，模板文件 `src/linglong_scout/ingest/prompts/morning_brief.md`。
+早报生成使用单次 LLM prompt，模板文件 `src/linglong_scout/scout/prompts/morning_brief.md`。
 
 ---
 
@@ -92,5 +92,5 @@
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong_scout/ingest/prompts/morning_brief.md` | Prompt 模板 |
-| `src/linglong_scout/ingest/agent.py` | Prompt 组装逻辑 |
+| `src/linglong_scout/scout/prompts/morning_brief.md` | Prompt 模板 |
+| `src/linglong_scout/scout/agent.py` | Prompt 组装逻辑 |

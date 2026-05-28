@@ -123,5 +123,5 @@ ingest:
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong_scout/ingest/brief_history.py` | BriefHistory 类 |
-| `src/linglong_scout/ingest/agent.py` | URL 去重逻辑 |
+| `src/linglong_scout/scout/brief_history.py` | BriefHistory 类 |
+| `src/linglong_scout/scout/agent.py` | URL 去重逻辑 |

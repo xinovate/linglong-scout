@@ -92,9 +92,9 @@ def test_generate_brief_returns_output():
     config.ingest.packages = [{"name": "ai-morning-brief", "topic": "AI 早报"}]
     set_config(config)
 
-    with patch("linglong_scout.ingest.agent.IngestAgent") as mock_agent_cls, \
-         patch("linglong_scout.ingest.brief_history.BriefHistory") as mock_bh_cls, \
-         patch("linglong_scout.ingest.feedback.FeedbackStore") as mock_fs_cls, \
+    with patch("linglong_scout.scout.agent.IngestAgent") as mock_agent_cls, \
+         patch("linglong_scout.scout.brief_history.BriefHistory") as mock_bh_cls, \
+         patch("linglong_scout.scout.feedback.FeedbackStore") as mock_fs_cls, \
          patch("asyncio.run", return_value="# AI 早报\n\nContent"):
         mock_agent = MagicMock()
         mock_agent.run = AsyncMock(return_value="# AI 早报\n\nContent")
@@ -126,7 +126,7 @@ def test_generate_brief_handles_error(tmp_path):
     config.ingest.brief_output_dir = str(tmp_path / "briefs")
     set_config(config)
 
-    with patch("linglong_scout.ingest.agent.IngestAgent", side_effect=Exception("Agent failed")):
+    with patch("linglong_scout.scout.agent.IngestAgent", side_effect=Exception("Agent failed")):
         result = generate_brief()
         data = json.loads(result)
 
@@ -172,10 +172,10 @@ def test_search_web_handles_error():
 
 
 def test_execute_package_returns_results():
-    with patch("linglong_scout.ingest.package.SourcePackage") as mock_pkg_cls, \
-         patch("linglong_scout.ingest.agent.IngestAgent") as mock_agent_cls, \
-         patch("linglong_scout.ingest.brief_history.BriefHistory") as mock_bh_cls, \
-         patch("linglong_scout.ingest.feedback.FeedbackStore") as mock_fs_cls, \
+    with patch("linglong_scout.scout.package.SourcePackage") as mock_pkg_cls, \
+         patch("linglong_scout.scout.agent.IngestAgent") as mock_agent_cls, \
+         patch("linglong_scout.scout.brief_history.BriefHistory") as mock_bh_cls, \
+         patch("linglong_scout.scout.feedback.FeedbackStore") as mock_fs_cls, \
          patch("asyncio.run", return_value="# AI 早报\n\nContent"):
         mock_pkg = MagicMock()
         mock_pkg.name = "test-package"
@@ -190,7 +190,7 @@ def test_execute_package_returns_results():
 
 
 def test_execute_package_handles_error():
-    with patch("linglong_scout.ingest.package.SourcePackage") as mock_cls:
+    with patch("linglong_scout.scout.package.SourcePackage") as mock_cls:
         mock_cls.from_yaml.side_effect = FileNotFoundError("Package not found")
 
         result = execute_package("/nonexistent/package.yaml")

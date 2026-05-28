@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 def cmd_ingest(args):
     """Run scout packages."""
-    from linglong_scout.ingest.agent import IngestAgent
-    from linglong_scout.ingest.brief_history import BriefHistory
-    from linglong_scout.ingest.feedback import FeedbackStore
-    from linglong_scout.ingest.package import SourcePackage
+    from linglong_scout.scout.agent import IngestAgent
+    from linglong_scout.scout.brief_history import BriefHistory
+    from linglong_scout.scout.feedback import FeedbackStore
+    from linglong_scout.scout.package import SourcePackage
     from linglong_scout.config import get_config
     from pathlib import Path
 

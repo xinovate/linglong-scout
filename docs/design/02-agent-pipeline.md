@@ -154,7 +154,7 @@ time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} 
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong_scout/ingest/agent.py` | `IngestAgent.run()` + 所有采集方法 |
-| `src/linglong_scout/ingest/prompts/morning_brief.md` | 早报 prompt 模板 |
+| `src/linglong_scout/scout/agent.py` | `IngestAgent.run()` + 所有采集方法 |
+| `src/linglong_scout/scout/prompts/morning_brief.md` | 早报 prompt 模板 |
 | `src/linglong_scout/config.py` | `IngestConfig` 配置模型 |
 | `src/linglong_scout/mcp/tools.py` | `generate_brief()` 缓存 + 调用逻辑 |

@@ -4,7 +4,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from linglong_scout.ingest.feedback import FeedbackStore
+from linglong_scout.scout.feedback import FeedbackStore
 
 
 def _make_store(tmpdir: Path) -> FeedbackStore:
@@ -85,4 +85,4 @@ class TestMCPRecordFeedback:
 def patch_store(store: FeedbackStore):
     """Context manager to patch FeedbackStore() to return a specific instance."""
     from unittest.mock import patch
-    return patch("linglong_scout.ingest.feedback.FeedbackStore", return_value=store)
+    return patch("linglong_scout.scout.feedback.FeedbackStore", return_value=store)

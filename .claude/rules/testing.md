@@ -51,7 +51,7 @@ async def test_search_web(mock_get):
     mock_get.return_value = MagicMock(json=lambda: {"results": [...]})
 
 # 坏：mock 内部业务函数
-@patch("linglong_scout.ingest.agent.IngestAgent._build_prompt")
+@patch("linglong_scout.scout.agent.IngestAgent._build_prompt")
 async def test_search_web(mock_prompt):
     ...
 ```

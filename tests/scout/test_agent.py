@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from linglong_scout.ingest.agent import (
+from linglong_scout.scout.agent import (
     IngestAgent,
     SourceHealth,
     _dedup_results,
@@ -18,7 +18,7 @@ from linglong_scout.ingest.agent import (
     _load_company_snapshot,
     _parse_opengithub_table,
 )
-from linglong_scout.ingest.package import SearchQueryConfig, SourcePackage
+from linglong_scout.scout.package import SearchQueryConfig, SourcePackage
 
 
 def _make_package() -> SourcePackage:
@@ -93,10 +93,10 @@ class TestIngestAgent:
             {"title": "Claude update", "url": "https://anthropic.com/news/y", "snippet": "Opus 4"},
         ]
 
-        with patch("linglong_scout.ingest.agent._searxng_search", new_callable=AsyncMock, return_value=mock_search_results), \
-             patch("linglong_scout.ingest.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
-             patch("linglong_scout.ingest.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong_scout.ingest.agent._call_llm", return_value="# AI 早报 · 2026-05-25\n\nMorning brief content"):
+        with patch("linglong_scout.scout.agent._searxng_search", new_callable=AsyncMock, return_value=mock_search_results), \
+             patch("linglong_scout.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
+             patch("linglong_scout.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
+             patch("linglong_scout.scout.agent._call_llm", return_value="# AI 早报 · 2026-05-25\n\nMorning brief content"):
             output = await agent.run(pkg)
 
         assert "AI 早报" in output
@@ -106,9 +106,9 @@ class TestIngestAgent:
         pkg = _make_package()
         agent = IngestAgent()
 
-        with patch("linglong_scout.ingest.agent._searxng_search", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong_scout.ingest.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
-             patch("linglong_scout.ingest.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]):
+        with patch("linglong_scout.scout.agent._searxng_search", new_callable=AsyncMock, return_value=[]), \
+             patch("linglong_scout.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
+             patch("linglong_scout.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]):
             output = await agent.run(pkg)
 
         assert "暂无搜索结果" in output
@@ -123,17 +123,17 @@ class TestIngestAgent:
                 return [{"title": "OK", "url": "https://ok.com", "snippet": "s"}]
             raise Exception("Search failed")
 
-        with patch("linglong_scout.ingest.agent._searxng_search", side_effect=mock_search), \
-             patch("linglong_scout.ingest.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
-             patch("linglong_scout.ingest.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong_scout.ingest.agent._call_llm", return_value="# AI 早报"):
+        with patch("linglong_scout.scout.agent._searxng_search", side_effect=mock_search), \
+             patch("linglong_scout.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
+             patch("linglong_scout.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
+             patch("linglong_scout.scout.agent._call_llm", return_value="# AI 早报"):
             output = await agent.run(pkg)
 
         assert "AI 早报" in output
 
     @pytest.mark.asyncio
     async def test_preference_injection(self):
-        from linglong_scout.ingest.feedback import FeedbackStore
+        from linglong_scout.scout.feedback import FeedbackStore
 
         pkg = _make_package()
         store = MagicMock(spec=FeedbackStore)
@@ -143,10 +143,10 @@ class TestIngestAgent:
 
         mock_results = [{"title": "T", "url": "https://t.com", "snippet": "s"}]
 
-        with patch("linglong_scout.ingest.agent._searxng_search", new_callable=AsyncMock, return_value=mock_results), \
-             patch("linglong_scout.ingest.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
-             patch("linglong_scout.ingest.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong_scout.ingest.agent._call_llm", return_value="# AI 早报") as mock_llm:
+        with patch("linglong_scout.scout.agent._searxng_search", new_callable=AsyncMock, return_value=mock_results), \
+             patch("linglong_scout.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
+             patch("linglong_scout.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
+             patch("linglong_scout.scout.agent._call_llm", return_value="# AI 早报") as mock_llm:
             await agent.run(pkg)
 
         # Verify preference text was passed to LLM
@@ -256,9 +256,9 @@ class TestFetchRssFeeds:
             {"name": "TestSource", "url": "https://example.com/feed"},
         ]
 
-        with patch("linglong_scout.ingest.agent.httpx.AsyncClient", return_value=mock_client), \
-             patch("linglong_scout.ingest.agent.get_config", return_value=config_mock):
-            from linglong_scout.ingest.agent import _fetch_rss_feeds
+        with patch("linglong_scout.scout.agent.httpx.AsyncClient", return_value=mock_client), \
+             patch("linglong_scout.scout.agent.get_config", return_value=config_mock):
+            from linglong_scout.scout.agent import _fetch_rss_feeds
             items = await _fetch_rss_feeds()
 
         assert len(items) == 1
@@ -299,9 +299,9 @@ class TestFetchRssFeeds:
             {"name": "S2", "url": "https://s2.com/feed"},
         ]
 
-        with patch("linglong_scout.ingest.agent.httpx.AsyncClient", return_value=mock_client), \
-             patch("linglong_scout.ingest.agent.get_config", return_value=config_mock):
-            from linglong_scout.ingest.agent import _fetch_rss_feeds
+        with patch("linglong_scout.scout.agent.httpx.AsyncClient", return_value=mock_client), \
+             patch("linglong_scout.scout.agent.get_config", return_value=config_mock):
+            from linglong_scout.scout.agent import _fetch_rss_feeds
             items = await _fetch_rss_feeds()
 
         assert len(items) == 1
@@ -345,9 +345,9 @@ class TestFetchRssFeeds:
             {"name": "Good", "url": "https://good.com/feed"},
         ]
 
-        with patch("linglong_scout.ingest.agent.httpx.AsyncClient", return_value=mock_client), \
-             patch("linglong_scout.ingest.agent.get_config", return_value=config_mock):
-            from linglong_scout.ingest.agent import _fetch_rss_feeds
+        with patch("linglong_scout.scout.agent.httpx.AsyncClient", return_value=mock_client), \
+             patch("linglong_scout.scout.agent.get_config", return_value=config_mock):
+            from linglong_scout.scout.agent import _fetch_rss_feeds
             items = await _fetch_rss_feeds()
 
         assert len(items) == 1
@@ -419,16 +419,16 @@ class TestLlmRetry:
         agent = IngestAgent()
         mock_results = [{"title": "T", "url": "https://t.com", "snippet": "s"}]
 
-        with patch("linglong_scout.ingest.agent._searxng_search", new_callable=AsyncMock, return_value=mock_results), \
-             patch("linglong_scout.ingest.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
-             patch("linglong_scout.ingest.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong_scout.ingest.agent._call_llm", side_effect=Exception("API error")):
+        with patch("linglong_scout.scout.agent._searxng_search", new_callable=AsyncMock, return_value=mock_results), \
+             patch("linglong_scout.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
+             patch("linglong_scout.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
+             patch("linglong_scout.scout.agent._call_llm", side_effect=Exception("API error")):
             with pytest.raises(Exception, match="API error"):
                 await agent.run(pkg)
 
     @pytest.mark.asyncio
     async def test_llm_fallback_to_history(self, tmp_path):
-        from linglong_scout.ingest.brief_history import BriefHistory
+        from linglong_scout.scout.brief_history import BriefHistory
 
         history = BriefHistory(tmp_path)
         history.save("2026-05-24", {"关键人物": "Some content"})
@@ -436,10 +436,10 @@ class TestLlmRetry:
         pkg = _make_package()
         agent = IngestAgent(brief_history=history)
 
-        with patch("linglong_scout.ingest.agent._searxng_search", new_callable=AsyncMock, return_value=[{"title": "T", "url": "https://t.com", "snippet": "s"}]), \
-             patch("linglong_scout.ingest.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
-             patch("linglong_scout.ingest.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
-             patch("linglong_scout.ingest.agent._call_llm", side_effect=Exception("API error")):
+        with patch("linglong_scout.scout.agent._searxng_search", new_callable=AsyncMock, return_value=[{"title": "T", "url": "https://t.com", "snippet": "s"}]), \
+             patch("linglong_scout.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
+             patch("linglong_scout.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
+             patch("linglong_scout.scout.agent._call_llm", side_effect=Exception("API error")):
             output = await agent.run(pkg)
 
         assert "LLM 生成失败" in output
@@ -448,7 +448,7 @@ class TestLlmRetry:
 
 class TestBriefHistoryOverlap:
     def test_detects_overlap(self, tmp_path):
-        from linglong_scout.ingest.brief_history import BriefHistory
+        from linglong_scout.scout.brief_history import BriefHistory
 
         history = BriefHistory(tmp_path)
         yesterday = (date.today() - __import__("datetime").timedelta(days=1)).isoformat()
@@ -460,7 +460,7 @@ class TestBriefHistoryOverlap:
         assert "关键人物" in warnings[0]
 
     def test_no_overlap_no_warning(self, tmp_path):
-        from linglong_scout.ingest.brief_history import BriefHistory
+        from linglong_scout.scout.brief_history import BriefHistory
 
         history = BriefHistory(tmp_path)
         yesterday = (date.today() - __import__("datetime").timedelta(days=1)).isoformat()
@@ -471,7 +471,7 @@ class TestBriefHistoryOverlap:
         assert len(warnings) == 0
 
     def test_empty_history(self, tmp_path):
-        from linglong_scout.ingest.brief_history import BriefHistory
+        from linglong_scout.scout.brief_history import BriefHistory
 
         history = BriefHistory(tmp_path)
         warnings = history.check_overlap({"关键人物": "content"})
@@ -495,9 +495,9 @@ class TestApiKeyAuth:
         config_mock.ingest.search_timeout = 10.0
         config_mock.ingest.searxng_api_key = "test-secret-key"
 
-        with patch("linglong_scout.ingest.agent.httpx.AsyncClient", return_value=mock_client), \
-             patch("linglong_scout.ingest.agent.get_config", return_value=config_mock):
-            from linglong_scout.ingest.agent import _searxng_search
+        with patch("linglong_scout.scout.agent.httpx.AsyncClient", return_value=mock_client), \
+             patch("linglong_scout.scout.agent.get_config", return_value=config_mock):
+            from linglong_scout.scout.agent import _searxng_search
             await _searxng_search("test query")
 
         call_kwargs = mock_client.get.call_args
@@ -520,9 +520,9 @@ class TestApiKeyAuth:
         config_mock.ingest.search_timeout = 10.0
         config_mock.ingest.searxng_api_key = None
 
-        with patch("linglong_scout.ingest.agent.httpx.AsyncClient", return_value=mock_client), \
-             patch("linglong_scout.ingest.agent.get_config", return_value=config_mock):
-            from linglong_scout.ingest.agent import _searxng_search
+        with patch("linglong_scout.scout.agent.httpx.AsyncClient", return_value=mock_client), \
+             patch("linglong_scout.scout.agent.get_config", return_value=config_mock):
+            from linglong_scout.scout.agent import _searxng_search
             await _searxng_search("test query")
 
         call_kwargs = mock_client.get.call_args
@@ -547,9 +547,9 @@ class TestApiKeyAuth:
         ]
         config_mock.ingest.rsshub_access_key = "rsshub-secret"
 
-        with patch("linglong_scout.ingest.agent.httpx.AsyncClient", return_value=mock_client), \
-             patch("linglong_scout.ingest.agent.get_config", return_value=config_mock):
-            from linglong_scout.ingest.agent import _fetch_rss_feeds
+        with patch("linglong_scout.scout.agent.httpx.AsyncClient", return_value=mock_client), \
+             patch("linglong_scout.scout.agent.get_config", return_value=config_mock):
+            from linglong_scout.scout.agent import _fetch_rss_feeds
             await _fetch_rss_feeds()
 
         called_url = mock_client.get.call_args.args[0]
@@ -574,9 +574,9 @@ class TestApiKeyAuth:
         ]
         config_mock.ingest.rsshub_access_key = "rsshub-secret"
 
-        with patch("linglong_scout.ingest.agent.httpx.AsyncClient", return_value=mock_client), \
-             patch("linglong_scout.ingest.agent.get_config", return_value=config_mock):
-            from linglong_scout.ingest.agent import _fetch_rss_feeds
+        with patch("linglong_scout.scout.agent.httpx.AsyncClient", return_value=mock_client), \
+             patch("linglong_scout.scout.agent.get_config", return_value=config_mock):
+            from linglong_scout.scout.agent import _fetch_rss_feeds
             await _fetch_rss_feeds()
 
         for call in mock_client.get.call_args_list:

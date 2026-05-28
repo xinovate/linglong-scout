@@ -95,11 +95,11 @@ graph TD
 
 | 组件 | 路径 | 说明 |
 |------|------|------|
-| `IngestAgent` | `src/linglong_scout/ingest/agent.py` | LLM Agent：预搜索 + 单 prompt → markdown |
-| `BriefHistory` | `src/linglong_scout/ingest/brief_history.py` | 按维度跨天去重 + 重叠检测 + fallback 输出 |
-| `SourcePackage` | `src/linglong_scout/ingest/package.py` | 采集包定义模型（内联在 .scout.yml） |
-| `FeedbackStore` | `src/linglong_scout/ingest/feedback.py` | 用户偏好存储 + 权重计算 |
-| `SourceHealth` | `src/linglong_scout/ingest/agent.py` | 信源健康监控（成功率 + 连续失败告警） |
+| `IngestAgent` | `src/linglong_scout/scout/agent.py` | LLM Agent：预搜索 + 单 prompt → markdown |
+| `BriefHistory` | `src/linglong_scout/scout/brief_history.py` | 按维度跨天去重 + 重叠检测 + fallback 输出 |
+| `SourcePackage` | `src/linglong_scout/scout/package.py` | 采集包定义模型（内联在 .scout.yml） |
+| `FeedbackStore` | `src/linglong_scout/scout/feedback.py` | 用户偏好存储 + 权重计算 |
+| `SourceHealth` | `src/linglong_scout/scout/agent.py` | 信源健康监控（成功率 + 连续失败告警） |
 | `company_snapshot.json` | `~/linglong/` | 中美 14 家 AI 公司融资/估值快照（外部维护） |
 
 ## MCP 工具
