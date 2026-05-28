@@ -1,12 +1,12 @@
 [Unit]
-Description=Linglong MCP Server
+Description=Linglong Scout MCP Server
 After=network.target
 
 [Service]
 Type=simple
 User=linglong
-WorkingDirectory=/opt/linglong
-ExecStart=/opt/linglong/.venv/bin/python -m linglong.mcp
+WorkingDirectory=/opt/linglong-scout
+ExecStart=/opt/linglong-scout/.venv/bin/python -m linglong_scout.mcp
 Restart=always
 RestartSec=5
 
@@ -25,7 +25,7 @@ Environment=RSSHUB_ACCESS_KEY=your-rsshub-key
 # 日志
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=linglong-mcp
+SyslogIdentifier=linglong-scout-mcp
 
 [Install]
 WantedBy=multi-user.target
