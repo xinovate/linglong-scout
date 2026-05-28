@@ -1,12 +1,12 @@
 # D-04 缓存与调度
 
-> 状态：✅ 已实现 | 最后更新：2026-05-26
+> 状态：✅ 已实现 | 最后更新：2026-05-28
 
 ---
 
 ## 概述
 
-`generate_brief()` 支持日内缓存，当天已生成的早报直接返回文件内容，避免重复 LLM 调用。
+`generate_brief()` 支持日内缓存，当天已生成的早报直接从 Redis 返回，避免重复 LLM 调用。
 
 ---
 
@@ -14,12 +14,21 @@
 
 ```
 generate_brief()
-  ├── 检查缓存文件 ~/linglong/briefs/{YYYY-MM-DD}.md
-  │   ├── 存在 → 直接返回（0.2ms）
+  ├── 检查 Redis scout:brief:{YYYY-MM-DD}
+  │   ├── 存在 → 直接返回
   │   └── 不存在 → 执行完整采集 + LLM 生成
-  │       └── 保存到缓存文件
-  └── 清理过期缓存（超过 brief_cache_days 天）
+  │       └── 写入 Redis（TTL 25h）
+  └── 清理过期 history key（超过 16 天）
 ```
+
+---
+
+## Redis 数据结构
+
+| Key | 类型 | TTL | 说明 |
+|-----|------|-----|------|
+| `scout:brief:{date}` | string | 25h | 当天早报 markdown |
+| `scout:history:{date}` | hash | 16d | 按维度的去重历史 |
 
 ---
 
@@ -27,9 +36,8 @@ generate_brief()
 
 | 配置 | 默认值 | 说明 |
 |------|--------|------|
-| `brief_output_dir` | `~/linglong/briefs` | 缓存目录，按日期 `{YYYY-MM-DD}.md` |
 | `brief_schedule_time` | `07:30` | 播报时段标记 |
-| `brief_cache_days` | `14` | 缓存保留天数 |
+| `mcp.redis_url` | `""` | Redis 连接地址，未配置时缓存不可用 |
 
 ---
 
@@ -37,18 +45,21 @@ generate_brief()
 
 | 场景 | 耗时 |
 |------|------|
-| 缓存命中 | 0.2ms |
-| 完整生成 | ~83s（7.6s 采集 + ~75s LLM） |
+| 缓存命中 | <1ms |
+| 完整生成 | ~100s（数据采集 + LLM） |
 
 ---
 
 ## 调度
 
-ingest 不做调度，由调用方处理：
+新增 CLI 命令 `linglong-scout brief`，支持外部 cron 定时触发：
 
-- **Claude Code**：对话中按需调用 `generate_brief`
-- **OpenClaw**：可通过 cron 定时触发
-- **CLI**：`linglong-scout ingest`
+```bash
+# crontab -e
+55 6 * * * linglong-scout brief
+```
+
+也支持 `--force` 强制重新生成。
 
 ---
 
@@ -56,4 +67,7 @@ ingest 不做调度，由调用方处理：
 
 | 文件 | 说明 |
 |------|------|
+| `src/linglong/scout/cache.py` | Redis 缓存读写 |
+| `src/linglong/scout/brief_history.py` | 去重历史（Redis hash） |
 | `src/linglong/mcp/tools.py` | `generate_brief()` 缓存逻辑 |
+| `src/linglong/cli.py` | `brief` CLI 命令 |

@@ -120,8 +120,7 @@ def execute_package(package_path: str) -> str:
 
         config = get_config()
         feedback_store = FeedbackStore()
-        history_dir = Path(config.ingest.brief_history_dir).expanduser()
-        brief_history = BriefHistory(history_dir, config.ingest.dedup_windows)
+        brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
         agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
         output = _run_async(agent.run(package))
 
@@ -144,11 +143,11 @@ def generate_brief() -> str:
     selected results to the knowledge store.
     """
     try:
-        from datetime import date, timedelta
-        from pathlib import Path
+        from datetime import date
 
         from linglong.scout.agent import IngestAgent
         from linglong.scout.brief_history import BriefHistory
+        from linglong.scout.cache import get_brief, set_brief
         from linglong.scout.feedback import FeedbackStore
         from linglong.scout.package import SourcePackage
 
@@ -160,13 +159,9 @@ def generate_brief() -> str:
             )
 
         # Cache check: return today's brief if already generated
-        output_dir = Path(config.ingest.brief_output_dir).expanduser()
-        output_dir.mkdir(parents=True, exist_ok=True)
         today = date.today().isoformat()
-        cache_path = output_dir / f"{today}.md"
-
-        if cache_path.exists():
-            cached = cache_path.read_text(encoding="utf-8")
+        cached = get_brief(today)
+        if cached:
             return json.dumps({
                 "package": config.ingest.packages[0].get("name", ""),
                 "output_length": len(cached),
@@ -176,20 +171,12 @@ def generate_brief() -> str:
 
         package = SourcePackage(**config.ingest.packages[0])
         feedback_store = FeedbackStore()
-        history_dir = Path(config.ingest.brief_history_dir).expanduser()
-        brief_history = BriefHistory(history_dir, config.ingest.dedup_windows)
+        brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
         agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
         output = _run_async(agent.run(package))
 
-        # Save to cache
         if output:
-            cache_path.write_text(output, encoding="utf-8")
-
-        # Cleanup old cached briefs
-        cutoff = (date.today() - timedelta(days=config.ingest.brief_cache_days)).isoformat()
-        for f in output_dir.glob("*.md"):
-            if f.stem < cutoff:
-                f.unlink()
+            set_brief(output, today)
 
         response: dict[str, Any] = {
             "package": package.name,

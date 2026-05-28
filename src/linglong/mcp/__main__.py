@@ -2,10 +2,10 @@
 
 import logging
 
-from linglong.config import get_config
+from linglong.config import get_config, setup_logging
 from linglong.mcp.server import create_http_app, create_server
 
-logging.basicConfig(level=logging.INFO)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 

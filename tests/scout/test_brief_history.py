@@ -1,8 +1,7 @@
 """Tests for BriefHistory."""
 
-import json
 from datetime import date, timedelta
-from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -74,25 +73,67 @@ class TestParseSections:
         assert parse_sections("just some text\nmore text") == {}
 
 
+def _mock_redis():
+    """Create a mock Redis client with in-memory hash storage."""
+    store: dict[str, dict[str, str]] = {}
+
+    client = MagicMock()
+
+    def hset(key, mapping=None):
+        if mapping:
+            store.setdefault(key, {}).update(mapping)
+
+    def hget(key, field):
+        return store.get(key, {}).get(field)
+
+    def hgetall(key):
+        return store.get(key, {})
+
+    def setex(key, ttl, value):
+        pass
+
+    def expire(key, ttl):
+        pass
+
+    def delete(key):
+        store.pop(key, None)
+
+    def scan(cursor, match=None):
+        matching = [k for k in store if match and k.startswith(match.rstrip("*"))]
+        return 0, matching
+
+    client.hset.side_effect = hset
+    client.hget.side_effect = hget
+    client.hgetall.side_effect = hgetall
+    client.setex.side_effect = setex
+    client.expire.side_effect = expire
+    client.delete.side_effect = delete
+    client.scan.side_effect = scan
+
+    return client, store
+
+
 class TestBriefHistory:
     @pytest.fixture
-    def history_dir(self, tmp_path: Path) -> Path:
-        return tmp_path / "brief_history"
+    def mock_r(self):
+        client, store = _mock_redis()
+        with patch("linglong.scout.cache._get_redis", return_value=client):
+            yield client, store
 
-    def test_save_and_load(self, history_dir: Path):
-        history = BriefHistory(history_dir)
+    def test_save_and_load(self, mock_r):
+        _, store = mock_r
+        history = BriefHistory()
         today = date.today().isoformat()
         sections = {"公司动态": "| 发布 GPT-5.5 | OpenAI | ... |"}
         history.save(today, sections)
 
-        # Can't load today's (only past days), so check file directly
-        path = history_dir / f"{today}.json"
-        assert path.exists()
-        data = json.loads(path.read_text(encoding="utf-8"))
-        assert "公司动态" in data
+        key = f"scout:history:{today}"
+        assert key in store
+        assert store[key]["公司动态"] == "| 发布 GPT-5.5 | OpenAI | ... |"
 
-    def test_load_past_days(self, history_dir: Path):
-        history = BriefHistory(history_dir)
+    def test_load_past_days(self, mock_r):
+        _, store = mock_r
+        history = BriefHistory()
         yesterday = (date.today() - timedelta(days=1)).isoformat()
         sections = {"公司动态": "| 发布 GPT-5.5 | OpenAI | ... |"}
         history.save(yesterday, sections)
@@ -101,20 +142,19 @@ class TestBriefHistory:
         assert "公司动态" in loaded
         assert yesterday in loaded["公司动态"]
 
-    def test_load_respects_windows(self, history_dir: Path):
-        history = BriefHistory(history_dir)
-        # 公司动态 window is 7 days; save something 10 days ago
+    def test_load_respects_windows(self, mock_r):
+        _, store = mock_r
+        history = BriefHistory()
         old_date = (date.today() - timedelta(days=10)).isoformat()
         sections = {"公司动态": "| old news |"}
         history.save(old_date, sections)
 
         loaded = history.load()
-        # Should NOT appear (10 > 7 day window for 公司动态)
         assert "公司动态" not in loaded
 
-    def test_load_policy_14_day_window(self, history_dir: Path):
-        history = BriefHistory(history_dir)
-        # 政策动态 window is 14 days; save something 10 days ago
+    def test_load_policy_14_day_window(self, mock_r):
+        _, store = mock_r
+        history = BriefHistory()
         old_date = (date.today() - timedelta(days=10)).isoformat()
         sections = {"政策动态": "| EU AI Act | 欧盟 | ... |"}
         history.save(old_date, sections)
@@ -122,12 +162,13 @@ class TestBriefHistory:
         loaded = history.load()
         assert "政策动态" in loaded
 
-    def test_format_for_prompt_empty(self, history_dir: Path):
-        history = BriefHistory(history_dir)
+    def test_format_for_prompt_empty(self, mock_r):
+        history = BriefHistory()
         assert history.format_for_prompt() == ""
 
-    def test_format_for_prompt_with_data(self, history_dir: Path):
-        history = BriefHistory(history_dir)
+    def test_format_for_prompt_with_data(self, mock_r):
+        _, store = mock_r
+        history = BriefHistory()
         yesterday = (date.today() - timedelta(days=1)).isoformat()
         sections = {"公司动态": "| some event |"}
         history.save(yesterday, sections)
@@ -136,21 +177,6 @@ class TestBriefHistory:
         assert "近期已播报" in text
         assert "公司动态" in text
 
-    def test_cleanup(self, history_dir: Path):
-        history = BriefHistory(history_dir)
-        # Save old files
-        for days_ago in [5, 10, 20, 30]:
-            d = (date.today() - timedelta(days=days_ago)).isoformat()
-            history.save(d, {"公司动态": "test"})
-
-        history.cleanup(max_days=16)
-
-        remaining = list(history_dir.glob("*.json"))
-        # Files from 5 and 10 days ago should remain (< 16)
-        # Files from 20 and 30 days ago should be removed
-        remaining_dates = [f.stem for f in remaining]
-        assert len(remaining) == 2
-
-    def test_no_history_returns_empty(self, history_dir: Path):
-        history = BriefHistory(history_dir)
+    def test_no_history_returns_empty(self, mock_r):
+        history = BriefHistory()
         assert history.load() == {}

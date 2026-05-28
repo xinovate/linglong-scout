@@ -92,7 +92,9 @@ def test_generate_brief_returns_output():
     config.ingest.packages = [{"name": "ai-morning-brief", "topic": "AI 早报"}]
     set_config(config)
 
-    with patch("linglong.scout.agent.IngestAgent") as mock_agent_cls, \
+    with patch("linglong.scout.cache.get_brief", return_value=None), \
+         patch("linglong.scout.cache.set_brief"), \
+         patch("linglong.scout.agent.IngestAgent") as mock_agent_cls, \
          patch("linglong.scout.brief_history.BriefHistory") as mock_bh_cls, \
          patch("linglong.scout.feedback.FeedbackStore") as mock_fs_cls, \
          patch("asyncio.run", return_value="# AI 早报\n\nContent"):
@@ -120,13 +122,13 @@ def test_generate_brief_no_packages():
     assert "No packages" in data["error"]
 
 
-def test_generate_brief_handles_error(tmp_path):
+def test_generate_brief_handles_error():
     config = get_config()
     config.ingest.packages = [{"name": "test", "topic": "test"}]
-    config.ingest.brief_output_dir = str(tmp_path / "briefs")
     set_config(config)
 
-    with patch("linglong.scout.agent.IngestAgent", side_effect=Exception("Agent failed")):
+    with patch("linglong.scout.cache.get_brief", return_value=None), \
+         patch("linglong.scout.agent.IngestAgent", side_effect=Exception("Agent failed")):
         result = generate_brief()
         data = json.loads(result)
 

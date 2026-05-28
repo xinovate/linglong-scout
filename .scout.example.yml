@@ -3,7 +3,6 @@
 
 debug: false
 log_level: "INFO"
-data_dir: ~/linglong/data
 
 # ── LLM ──────────────────────────────────────
 llm:
@@ -36,7 +35,6 @@ ingest:
     min_stars: 500
 
   # 早报去重（按维度回看天数）
-  brief_history_dir: ~/linglong/brief_history
   company_snapshot_path: ~/linglong/company_snapshot.json
   dedup_windows:
     关键人物: 14
@@ -44,10 +42,8 @@ ingest:
     政策动态: 14
     应用落地: 7
 
-  # 早报缓存（当天已生成直接返回，避免重复 LLM 调用）
-  brief_output_dir: ~/linglong/briefs
+  # 早报时段标记
   brief_schedule_time: "07:30"
-  brief_cache_days: 14
 
   # RSS 订阅源
   rss_sources:

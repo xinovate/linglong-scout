@@ -1,7 +1,7 @@
 """Tests for IngestAgent."""
 
 import json
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -430,16 +430,37 @@ class TestLlmRetry:
     async def test_llm_fallback_to_history(self, tmp_path):
         from linglong.scout.brief_history import BriefHistory
 
-        history = BriefHistory(tmp_path)
-        history.save("2026-05-24", {"关键人物": "Some content"})
+        store: dict[str, dict[str, str]] = {}
+        mock_client = MagicMock()
 
-        pkg = _make_package()
-        agent = IngestAgent(brief_history=history)
+        def hset(key, mapping=None):
+            if mapping:
+                store.setdefault(key, {}).update(mapping)
 
-        with patch("linglong.scout.agent._searxng_search", new_callable=AsyncMock, return_value=[{"title": "T", "url": "https://t.com", "snippet": "s"}]), \
+        def hget(key, field):
+            return store.get(key, {}).get(field)
+
+        def hgetall(key):
+            return store.get(key, {})
+
+        def scan(cursor, match=None):
+            return 0, [k for k in store if "history" in k]
+
+        mock_client.hset.side_effect = hset
+        mock_client.hget.side_effect = hget
+        mock_client.hgetall.side_effect = hgetall
+        mock_client.scan.side_effect = scan
+
+        with patch("linglong.scout.cache._get_redis", return_value=mock_client), \
+             patch("linglong.scout.agent._searxng_search", new_callable=AsyncMock, return_value=[{"title": "T", "url": "https://t.com", "snippet": "s"}]), \
              patch("linglong.scout.agent._github_trending", new_callable=AsyncMock, return_value=([], "trending")), \
              patch("linglong.scout.agent._fetch_rss_feeds", new_callable=AsyncMock, return_value=[]), \
              patch("linglong.scout.agent._call_llm", side_effect=Exception("API error")):
+            history = BriefHistory()
+            history.save("2026-05-24", {"关键人物": "Some content"})
+
+            pkg = _make_package()
+            agent = IngestAgent(brief_history=history)
             output = await agent.run(pkg)
 
         assert "LLM 生成失败" in output
@@ -447,34 +468,63 @@ class TestLlmRetry:
 
 
 class TestBriefHistoryOverlap:
+    def _make_history_with_store(self):
+        store: dict[str, dict[str, str]] = {}
+        mock_client = MagicMock()
+
+        def hset(key, mapping=None):
+            if mapping:
+                store.setdefault(key, {}).update(mapping)
+
+        def hget(key, field):
+            return store.get(key, {}).get(field)
+
+        def hgetall(key):
+            return store.get(key, {})
+
+        def scan(cursor, match=None):
+            return 0, list(store.keys())
+
+        mock_client.hset.side_effect = hset
+        mock_client.hget.side_effect = hget
+        mock_client.hgetall.side_effect = hgetall
+        mock_client.scan.side_effect = scan
+        return mock_client, store
+
     def test_detects_overlap(self, tmp_path):
         from linglong.scout.brief_history import BriefHistory
 
-        history = BriefHistory(tmp_path)
-        yesterday = (date.today() - __import__("datetime").timedelta(days=1)).isoformat()
-        history.save(yesterday, {"关键人物": "LeCun says AI is great. Hinton warns about dangers."})
+        mock_client, store = self._make_history_with_store()
+        with patch("linglong.scout.cache._get_redis", return_value=mock_client):
+            history = BriefHistory()
+            yesterday = (date.today() - timedelta(days=1)).isoformat()
+            history.save(yesterday, {"关键人物": "LeCun says AI is great. Hinton warns about dangers."})
 
-        new_sections = {"关键人物": "LeCun says AI is great. Hinton warns about dangers. New stuff."}
-        warnings = history.check_overlap(new_sections)
+            new_sections = {"关键人物": "LeCun says AI is great. Hinton warns about dangers. New stuff."}
+            warnings = history.check_overlap(new_sections)
         assert len(warnings) >= 1
         assert "关键人物" in warnings[0]
 
     def test_no_overlap_no_warning(self, tmp_path):
         from linglong.scout.brief_history import BriefHistory
 
-        history = BriefHistory(tmp_path)
-        yesterday = (date.today() - __import__("datetime").timedelta(days=1)).isoformat()
-        history.save(yesterday, {"关键人物": "Completely different content about robots."})
+        mock_client, store = self._make_history_with_store()
+        with patch("linglong.scout.cache._get_redis", return_value=mock_client):
+            history = BriefHistory()
+            yesterday = (date.today() - timedelta(days=1)).isoformat()
+            history.save(yesterday, {"关键人物": "Completely different content about robots."})
 
-        new_sections = {"关键人物": "OpenAI released GPT-6 model today."}
-        warnings = history.check_overlap(new_sections)
+            new_sections = {"关键人物": "OpenAI released GPT-6 model today."}
+            warnings = history.check_overlap(new_sections)
         assert len(warnings) == 0
 
     def test_empty_history(self, tmp_path):
         from linglong.scout.brief_history import BriefHistory
 
-        history = BriefHistory(tmp_path)
-        warnings = history.check_overlap({"关键人物": "content"})
+        mock_client, _ = self._make_history_with_store()
+        with patch("linglong.scout.cache._get_redis", return_value=mock_client):
+            history = BriefHistory()
+            warnings = history.check_overlap({"关键人物": "content"})
         assert len(warnings) == 0
 
 

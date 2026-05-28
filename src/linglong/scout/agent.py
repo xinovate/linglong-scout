@@ -572,8 +572,12 @@ def _load_prompt() -> str:
 def _call_llm(system: str, user: str, max_tokens: int | None = None, retries: int | None = None) -> str:
     """Call LLM via Anthropic Messages API, with retry."""
     config = get_config()
-    base_url = (config.llm.llm_base_url or "https://open.bigmodel.cn/api/anthropic").rstrip("/")
+    base_url = config.llm.llm_base_url
     api_key = config.llm.llm_api_key
+    model = config.llm.llm_model
+    if not base_url or not api_key or not model:
+        raise RuntimeError("LLM not configured: set llm.llm_base_url, llm.llm_api_key, llm.llm_model in .scout.yml")
+    base_url = base_url.rstrip("/")
     if max_tokens is None:
         max_tokens = config.ingest.llm_max_tokens
     if retries is None:
@@ -591,10 +595,11 @@ def _call_llm(system: str, user: str, max_tokens: int | None = None, retries: in
                     "content-type": "application/json",
                 },
                 json={
-                    "model": config.llm.llm_model or "glm-5.1",
+                    "model": model,
                     "max_tokens": max_tokens,
-                    "system": system,
-                    "messages": [{"role": "user", "content": user}],
+                    "messages": [
+                        {"role": "user", "content": f"{system}\n\n{user}"},
+                    ],
                 },
                 timeout=timeout,
             )

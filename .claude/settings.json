@@ -8,6 +8,13 @@
             "type": "command",
             "if": "Bash(git commit*)",
             "command": "bash",
+            "args": ["-c", "python3 ${CLAUDE_PROJECT_DIR}/scripts/privacy-check.py"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit*)",
+            "command": "bash",
             "args": ["-c", "python3 ${CLAUDE_PROJECT_DIR}/scripts/doc-check.py --claude-hook"],
             "timeout": 10
           }

@@ -16,6 +16,7 @@ dependencies = [
     "feedparser>=6.0",
     "schedule>=1.2",
     "starlette",
+    "redis>=5.0",
 ]
 
 [project.optional-dependencies]
@@ -24,9 +25,6 @@ dev = [
     "pytest-asyncio>=0.21",
     "ruff>=0.1",
     "mypy>=1.0",
-]
-redis = [
-    "redis>=5.0",
 ]
 
 [project.scripts]

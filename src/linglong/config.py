@@ -2,6 +2,7 @@
 
 import logging
 import os
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
 
@@ -79,10 +80,6 @@ class IngestConfig(BaseSettings):
         description="GitHub Search API fallback parameters",
     )
 
-    brief_history_dir: str = Field(
-        default="~/linglong/brief_history",
-        description="Directory for brief history JSON files (dedup)",
-    )
     company_snapshot_path: str = Field(
         default="~/linglong/company_snapshot.json",
         description="Company funding/valuation snapshot for brief generation",
@@ -92,17 +89,9 @@ class IngestConfig(BaseSettings):
         description="Per-dimension lookback days for dedup",
     )
 
-    brief_output_dir: str = Field(
-        default="~/linglong/briefs",
-        description="Directory for cached daily briefs",
-    )
     brief_schedule_time: str = Field(
         default="07:30",
         description="Daily brief schedule time (HH:MM), used for time range markers",
-    )
-    brief_cache_days: int = Field(
-        default=14,
-        description="Days to keep cached briefs",
     )
 
 
@@ -146,17 +135,14 @@ class ScoutConfig(BaseSettings):
 
     debug: bool = Field(default=False, description="Debug mode")
     log_level: str = Field(default="INFO", description="Logging level")
-    data_dir: Path = Field(
-        default=Path.home() / "linglong" / "data", description="Data directory"
+    log_file: str | None = Field(
+        default="~/linglong/logs/scout.log",
+        description="Log file path (None to disable file logging)",
     )
 
     llm: LLMConfig = Field(default_factory=LLMConfig)
     ingest: IngestConfig = Field(default_factory=IngestConfig)
     mcp: MCPConfig = Field(default_factory=MCPConfig)
-
-    def ensure_directories(self) -> None:
-        """Ensure all required directories exist."""
-        self.data_dir.mkdir(parents=True, exist_ok=True)
 
 
 _config: ScoutConfig | None = None
@@ -204,7 +190,6 @@ def get_config() -> ScoutConfig:
             _config = _load_yaml_to_config(yaml_path)
         else:
             _config = ScoutConfig()
-        _config.ensure_directories()
     return _config
 
 
@@ -212,3 +197,33 @@ def set_config(config: ScoutConfig) -> None:
     """Set global configuration (useful for testing)."""
     global _config
     _config = config
+
+
+def setup_logging(level: str | None = None) -> None:
+    """Configure root logger with console + rotating file handler."""
+    config = get_config()
+    log_level = level or config.log_level
+    root = logging.getLogger()
+    root.setLevel(getattr(logging, log_level.upper(), logging.INFO))
+
+    formatter = logging.Formatter(
+        "%(asctime)s %(levelname)s %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Console handler
+    if not any(isinstance(h, logging.StreamHandler) and not isinstance(h, RotatingFileHandler) for h in root.handlers):
+        console = logging.StreamHandler()
+        console.setFormatter(formatter)
+        root.addHandler(console)
+
+    # File handler
+    if config.log_file:
+        log_path = Path(config.log_file).expanduser()
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        if not any(isinstance(h, RotatingFileHandler) and h.baseFilename == str(log_path) for h in root.handlers):
+            file_handler = RotatingFileHandler(
+                log_path, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8",
+            )
+            file_handler.setFormatter(formatter)
+            root.addHandler(file_handler)
