@@ -19,7 +19,7 @@ def cmd_ingest(args):
 
     config = get_config()
     if not config.ingest.packages:
-        print("No packages configured in .linglong-scout.yaml")
+        print("No packages configured in .scout.yml")
         sys.exit(1)
 
     import asyncio

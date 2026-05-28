@@ -5,7 +5,7 @@
 | 代码改动 | 必须更新 |
 |---------|---------|
 | 新增/删除/修改 MCP 工具 | API 文档 + 工具列表 |
-| 新增/修改配置字段 | API 文档 + `.linglong-scout.example.yaml` |
+| 新增/修改配置字段 | API 文档 + `.scout.example.yml` |
 | ingest 数据源变化 | ingest 文档 + 路线图 |
 | 版本级改动 | 版本表 + Next Actions + 路线图 |
 | 架构决策变更 | 架构文档 + 路线图 ADR |

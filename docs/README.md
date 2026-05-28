@@ -97,7 +97,7 @@ graph TD
 |------|------|------|
 | `IngestAgent` | `src/linglong_scout/ingest/agent.py` | LLM Agent：预搜索 + 单 prompt → markdown |
 | `BriefHistory` | `src/linglong_scout/ingest/brief_history.py` | 按维度跨天去重 + 重叠检测 + fallback 输出 |
-| `SourcePackage` | `src/linglong_scout/ingest/package.py` | 采集包定义模型（内联在 .linglong-scout.yaml） |
+| `SourcePackage` | `src/linglong_scout/ingest/package.py` | 采集包定义模型（内联在 .scout.yml） |
 | `FeedbackStore` | `src/linglong_scout/ingest/feedback.py` | 用户偏好存储 + 权重计算 |
 | `SourceHealth` | `src/linglong_scout/ingest/agent.py` | 信源健康监控（成功率 + 连续失败告警） |
 | `company_snapshot.json` | `~/linglong/` | 中美 14 家 AI 公司融资/估值快照（外部维护） |
@@ -106,7 +106,7 @@ graph TD
 
 | 工具 | 说明 |
 |------|------|
-| `generate_brief()` | 读取 .linglong-scout.yaml 中第一个 package，采集 + LLM 合成 → 返回 markdown 早报 |
+| `generate_brief()` | 读取 .scout.yml 中第一个 package，采集 + LLM 合成 → 返回 markdown 早报 |
 | `execute_package(path)` | 指定 YAML 文件路径执行采集包 |
 | `fetch_rss(url)` | 采集单个 RSS feed，返回条目列表 |
 | `search_web(query, max_results)` | SearXNG 搜索，返回结果列表 |
@@ -138,7 +138,7 @@ graph TD
 }
 ```
 
-> MCP 子进程不继承 shell 环境变量，必须通过 `env` 字段注入。config.py 通过 `_PROJECT_ROOT` fallback 自动定位 `.linglong-scout.yaml`。
+> MCP 子进程不继承 shell 环境变量，必须通过 `env` 字段注入。config.py 通过 `_PROJECT_ROOT` fallback 自动定位 `.scout.yml`。
 
 #### OpenClaw（本地）
 
@@ -165,7 +165,7 @@ graph TD
 
 #### 1. 服务端配置
 
-`.linglong-scout.yaml` 切换为 HTTP 模式：
+`.scout.yml` 切换为 HTTP 模式：
 
 ```yaml
 mcp:
@@ -215,7 +215,7 @@ linglong-scout scout
 ## 配置
 
 ```yaml
-# .linglong-scout.yaml
+# .scout.yml
 ingest:
   searxng_url: http://localhost:8088
 
@@ -229,7 +229,7 @@ ingest:
       url: https://aihot.virxact.com/feed
     - name: 36氪
       url: https://36kr.com/feed
-    # ... 更多源见 .linglong-scout.example.yaml
+    # ... 更多源见 .scout.example.yml
 
   packages:
     - name: ai-morning-brief

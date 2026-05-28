@@ -11,7 +11,7 @@
 
 - 所有第三方服务密钥（智谱、SearXNG、RSSHub、Embedding）从环境变量加载
 - systemd 服务文件用 `Environment=` 指令，不在 Python 源码中硬编码
-- 本地开发：密钥可放 `.linglong-scout.yaml`（已 gitignore）或环境变量
+- 本地开发：密钥可放 `.scout.yml`（已 gitignore）或环境变量
 - 密钥轮换：Redis 中的 Token 支持写入新值后删除旧值，无停机切换
 
 ## 输入校验

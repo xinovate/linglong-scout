@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _YAML_SEARCH_PATHS = [
-    Path(".linglong-scout.yaml"),
-    _PROJECT_ROOT / ".linglong-scout.yaml",
-    Path.home() / ".linglong-scout" / "config.yaml",
+    Path(".scout.yml"),
+    _PROJECT_ROOT / ".scout.yml",
+    Path.home() / ".scout" / "config.yml",
 ]
 
 
@@ -163,7 +163,7 @@ _config: ScoutConfig | None = None
 
 
 def _find_yaml_config() -> Path | None:
-    """Search for .linglong-scout.yaml config file, return first found path."""
+    """Search for .scout.yml config file, return first found path."""
     for p in _YAML_SEARCH_PATHS:
         if p.exists():
             return p

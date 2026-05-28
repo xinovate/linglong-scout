@@ -1,5 +1,5 @@
 # Linglong Scout 配置
-# 复制为 .linglong-scout.yaml 并填入实际值
+# 复制为 .scout.yml 并填入实际值
 
 debug: false
 log_level: "INFO"

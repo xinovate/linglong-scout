@@ -51,7 +51,7 @@ wiki/
 # Environment
 .env
 .env.local
-.linglong-scout.yaml
+.scout.yml
 db/
 
 # macOS

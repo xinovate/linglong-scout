@@ -155,7 +155,7 @@ def generate_brief() -> str:
         config = get_config()
         if not config.ingest.packages:
             return json.dumps(
-                {"error": "No packages configured in .linglong-scout.yaml"},
+                {"error": "No packages configured in .scout.yml"},
                 ensure_ascii=False,
             )
 
