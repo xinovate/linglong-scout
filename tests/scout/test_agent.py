@@ -543,7 +543,7 @@ class TestApiKeyAuth:
 
         config_mock = MagicMock()
         config_mock.ingest.rss_sources = [
-            {"name": "36氪快讯", "url": "http://redacted-server-ip:1200/36kr/newsflashes"},
+            {"name": "36氪快讯", "url": "http://localhost:1200/36kr/newsflashes"},
         ]
         config_mock.ingest.rsshub_access_key = "rsshub-secret"
 

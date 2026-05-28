@@ -26,10 +26,10 @@ class LLMConfig(BaseSettings):
 
     llm_api_key: str | None = Field(default=None, description="LLM API key")
     llm_base_url: str | None = Field(
-        default="https://open.bigmodel.cn/api/anthropic",
+        default=None,
         description="LLM base URL",
     )
-    llm_model: str = Field(default="glm-5.1", description="LLM model name")
+    llm_model: str = Field(default="gpt-4o", description="LLM model name")
     llm_temperature: float = Field(default=0.3, description="LLM temperature")
     llm_max_tokens: int = Field(default=8000, description="LLM max output tokens")
 
@@ -47,7 +47,7 @@ class IngestConfig(BaseSettings):
         description="Inline package definitions",
     )
     searxng_url: str = Field(
-        default="http://redacted-server-ip:8088",
+        default="http://localhost:8088",
         description="SearXNG instance URL for JSON API search",
     )
     search_timeout: float = Field(

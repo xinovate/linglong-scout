@@ -79,7 +79,7 @@ def test_fetch_rss_rsshub_key_only_for_rsshub_urls():
 
         mock_client.get.reset_mock()
         # RSSHub URL should get key
-        fetch_rss("http://redacted-server-ip:1200/36kr/newsflashes")
+        fetch_rss("http://localhost:1200/36kr/newsflashes")
         called_url = mock_client.get.call_args.args[0]
         assert "key=test-key" in called_url
 

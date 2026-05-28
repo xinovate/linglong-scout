@@ -8,8 +8,8 @@ data_dir: ~/linglong/data
 # ── LLM ──────────────────────────────────────
 llm:
   llm_api_key: ""                         # Or set LL_SCOUT_LLM_API_KEY
-  llm_base_url: "https://open.bigmodel.cn/api/anthropic"
-  llm_model: "glm-5.1"
+  llm_base_url: "https://api.example.com/v1"
+  llm_model: "gpt-4o"
 
 # ── 信息采集 ──────────────────────────────────
 ingest:
