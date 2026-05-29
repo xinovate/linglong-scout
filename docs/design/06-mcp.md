@@ -112,8 +112,8 @@ graph LR
 ```
 
 配置文件：
-- `.scout.yml` — 服务器端配置（`deploy/.scout.yml.example`），敏感值用 `${ENV_VAR}` 引用
-- `.env` — 环境变量（`deploy/.env.example`），包含 API Key、Token、Redis URL
+- `.scout.yml` — 服务器端配置（参考 `.scout.example.yml`），敏感值用 `${ENV_VAR}` 引用
+- `.env` — 环境变量，包含 API Key、Token、Redis URL
 - `docker-compose.yml` — `network_mode: host`，挂载 `.scout.yml` 和 `data/` 目录
 
 ---
