@@ -56,6 +56,40 @@ async def fetch_rss(url: str, name: str | None = None, max_items: int = 20) -> s
         return json.dumps({"error": str(exc)}, ensure_ascii=False)
 
 
+async def fetch_github_trending(
+    daily: int = 5, weekly: int = 3, monthly: int = 3,
+) -> str:
+    """Fetch GitHub trending repos with stars growth.
+
+    Returns repos from OpenGithubs (primary), wangchujiang HTML (fallback),
+    or GitHub Search API (last resort).
+    """
+    try:
+        from linglong.scout.collect import _github_trending
+
+        limits = {"daily": daily, "weekly": weekly, "monthly": monthly}
+        repos, source = await _github_trending(limits=limits)
+
+        results = []
+        for r in repos:
+            results.append({
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "snippet": r.get("snippet", ""),
+                "stars": r.get("stars", ""),
+                "growth": r.get("growth", ""),
+                "period": r.get("period", ""),
+            })
+
+        return json.dumps(
+            {"results": results, "count": len(results), "source": source},
+            ensure_ascii=False,
+        )
+    except Exception as exc:
+        logger.exception("fetch_github_trending failed")
+        return json.dumps({"error": str(exc)}, ensure_ascii=False)
+
+
 async def record_feedback(
     content_hash: str,
     feedback: str,

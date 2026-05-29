@@ -90,8 +90,12 @@ class IngestConfig(BaseSettings):
     )
 
     brief_schedule_time: str = Field(
-        default="07:30",
+        default="07:00",
         description="Daily brief schedule time (HH:MM), used for time range markers",
+    )
+    collect_schedule: str = Field(
+        default="06:55",
+        description="Daily raw data collection time (HH:MM), empty to disable auto-collect",
     )
 
     raw_data_dir: str = Field(

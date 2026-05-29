@@ -29,10 +29,12 @@ def main() -> None:
 
 
 def _run_http(config) -> None:
-    """Run HTTP server with optional auth."""
+    """Run HTTP server with optional auth and background scheduler."""
     import anyio
 
     async def _serve():
+        import asyncio
+
         import uvicorn
 
         app = create_http_app()
@@ -49,6 +51,11 @@ def _run_http(config) -> None:
                 logger.info("Token auth enabled (Redis)")
             else:
                 logger.info("Token auth enabled (static)")
+
+        if config.ingest.collect_schedule:
+            from linglong.scout.scheduler import collect_scheduler
+
+            asyncio.create_task(collect_scheduler())
 
         uv_config = uvicorn.Config(
             app,
