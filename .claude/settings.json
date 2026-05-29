@@ -30,6 +30,13 @@
             "command": "bash",
             "args": ["-c", "python3 ${CLAUDE_PROJECT_DIR}/scripts/doc-check.py --claude-hook"],
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(git push*)",
+            "command": "bash",
+            "args": ["-c", "python3 ${CLAUDE_PROJECT_DIR}/scripts/journal-check.py --claude-hook"],
+            "timeout": 5
           }
         ]
       }
