@@ -186,31 +186,24 @@ async def test_search_web_handles_error():
 
 
 async def test_execute_package_returns_results():
-    with patch("linglong.scout.package.SourcePackage") as mock_pkg_cls, \
-         patch("linglong.scout.agent.IngestAgent") as mock_agent_cls, \
+    with patch("linglong.scout.agent.IngestAgent") as mock_agent_cls, \
          patch("linglong.scout.brief_history.BriefHistory") as mock_bh_cls, \
          patch("linglong.scout.feedback.FeedbackStore") as mock_fs_cls:
-        mock_pkg = MagicMock()
-        mock_pkg.name = "test-package"
-        mock_pkg_cls.from_yaml.return_value = mock_pkg
-
         mock_agent = MagicMock()
         mock_agent.run = AsyncMock(return_value="# AI 早报\n\nContent")
         mock_agent_cls.return_value = mock_agent
 
-        result = await execute_package("/path/to/package.yaml")
+        result = await execute_package(topic="AI 早报", keywords=["OpenAI news"])
         data = json.loads(result)
 
     assert "error" not in data
-    assert data["package"] == "test-package"
+    assert data["package"] == "custom-brief"
     assert "output" in data
 
 
 async def test_execute_package_handles_error():
-    with patch("linglong.scout.package.SourcePackage") as mock_cls:
-        mock_cls.from_yaml.side_effect = FileNotFoundError("Package not found")
-
-        result = await execute_package("/nonexistent/package.yaml")
+    with patch("linglong.scout.agent.IngestAgent", side_effect=Exception("Agent failed")):
+        result = await execute_package(topic="test")
         data = json.loads(result)
 
     assert "error" in data

@@ -88,18 +88,42 @@ async def record_feedback(
         return json.dumps({"error": str(exc)}, ensure_ascii=False)
 
 
-async def execute_package(package_path: str) -> str:
-    """Execute an scout package via IngestAgent.
+async def execute_package(
+    topic: str,
+    keywords: list[str] | None = None,
+    name: str = "custom-brief",
+    max_results: int = 5,
+    max_age_days: int = 3,
+) -> str:
+    """Execute a custom scout package with given parameters.
 
-    Returns the morning brief output as markdown.
+    Collects data from SearXNG, GitHub trending, and RSS feeds based on
+    keywords, then generates a structured brief via LLM.
+
+    Args:
+        topic: Brief topic, e.g. "AI 早报" or "开源周刊".
+        keywords: Search keywords for SearXNG. If empty, skips web search.
+        name: Package name identifier.
+        max_results: Max results per keyword.
+        max_age_days: Max age in days for search results.
     """
     try:
         from linglong.scout.agent import IngestAgent
         from linglong.scout.brief_history import BriefHistory
         from linglong.scout.feedback import FeedbackStore
-        from linglong.scout.package import SourcePackage
+        from linglong.scout.package import SearchQueryConfig, SourcePackage
 
-        package = SourcePackage.from_yaml(package_path)
+        package = SourcePackage(
+            name=name,
+            topic=topic,
+            search_queries=[
+                SearchQueryConfig(
+                    keywords=keywords or [],
+                    max_results=max_results,
+                    max_age_days=max_age_days,
+                ),
+            ] if keywords else [],
+        )
 
         config = get_config()
         feedback_store = FeedbackStore()
