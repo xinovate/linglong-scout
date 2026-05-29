@@ -22,6 +22,7 @@ from linglong.scout.collect import (
     _is_noise_url,
     _parse_opengithub_table,
     _searxng_search,
+    _validate_feed_url,
     collect as collect_data,
 )
 from linglong.scout.package import SearchQueryConfig, SourcePackage
@@ -639,7 +640,7 @@ class TestApiKeyAuth:
 
         config_mock = MagicMock()
         config_mock.ingest.rss_sources = [
-            {"name": "36氪快讯", "url": "http://localhost:1200/36kr/newsflashes"},
+            {"name": "36氪快讯", "url": "https://rsshub.example.com:1200/36kr/newsflashes"},
         ]
         config_mock.ingest.rsshub_access_key = "rsshub-secret"
 
@@ -676,3 +677,24 @@ class TestApiKeyAuth:
         for call in mock_client.get.call_args_list:
             called_url = call.args[0]
             assert "key=" not in called_url, f"key should not be in non-RSSHub URL: {called_url}"
+
+
+class TestUrlValidation:
+    def test_rejects_ftp_scheme(self):
+        with pytest.raises(ValueError, match="scheme not allowed"):
+            _validate_feed_url("ftp://example.com/feed")
+
+    def test_rejects_localhost(self):
+        with pytest.raises(ValueError, match="internal network"):
+            _validate_feed_url("http://localhost/feed")
+
+    def test_rejects_private_ip(self):
+        with pytest.raises(ValueError, match="internal network"):
+            _validate_feed_url("http://192.168.1.1/feed")
+
+    def test_allows_public_url(self):
+        _validate_feed_url("https://example.com/feed.xml")  # no error
+
+    def test_rejects_empty_host(self):
+        with pytest.raises(ValueError, match="hostname"):
+            _validate_feed_url("http:///feed")

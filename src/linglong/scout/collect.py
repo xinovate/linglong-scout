@@ -407,8 +407,36 @@ async def _github_search_fallback(since_days: int, min_stars: int, limit: int) -
 
 # --- RSS ---
 
+
+def _validate_feed_url(url: str) -> None:
+    """Validate URL to prevent SSRF attacks.
+
+    Raises:
+        ValueError: If URL uses disallowed scheme or targets internal network.
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"URL scheme not allowed: {parsed.scheme} (only http/https)")
+    host = parsed.hostname or ""
+    if not host:
+        raise ValueError("URL must have a hostname")
+    # Block internal/private network addresses
+    if (
+        host in ("localhost", "127.0.0.1", "0.0.0.0", "::1")
+        or host.startswith("192.168.")
+        or host.startswith("10.")
+        or host.startswith("172.16.")
+        or host.endswith(".local")
+        or host.endswith(".internal")
+    ):
+        raise ValueError(f"URL targets internal network: {host}")
+
+
 async def fetch_single_feed(url: str, name: str = "", max_items: int = 30) -> list[dict[str, str]]:
     """Fetch and parse a single RSS/Atom feed."""
+    _validate_feed_url(url)
     config = get_config()
     if config.ingest.rsshub_access_key and _is_rsshub_url(url):
         sep = "&" if "?" in url else "?"
