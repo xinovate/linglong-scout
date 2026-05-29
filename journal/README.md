@@ -7,7 +7,7 @@
 
 | 日期 | 主题 | 关键结论 |
 |------|------|----------|
-| 2026-05-29 | 多用户隔离 + CI/CD + async 重构 + agent 拆分 + 自动调度 + 文档同步 | async 工具函数；collect/agent 拆分(801→295行)；execute_package 参数化；brief 缓存按 user_id 隔离；容器内 asyncio 调度器(06:55)；fetch_github_trending 工具(7个)；6 份设计文档全面同步 |
+| 2026-05-29 | 多用户隔离 + 自动调度 + 清理 + 文档全面修正 | brief 缓存按 user_id 隔离；容器内 asyncio 调度器(06:55)；fetch_github_trending(7个工具)；company_snapshot 迁移 Redis；废弃配置清理；一致性测试；根 README；MCP 工具参数名/环境变量/数据源表全面修正；systemd 引用清除；.env 按服务分组(URL+Key) |
 | 2026-05-28 | 项目独立化：命名统一 + Docker + 配置重构 + 文档同步 | 10 commits；ingest→scout 全面重命名；.scout.yml；Docker 镜像 309MB；doc-check hook |
 | 2026-05-26 | v2.4–v2.6 Agent 接入 + 并发优化 + 缓存 + MCP 远程部署 | Claude Code MCP 连通；数据采集 57s→7.6s；日内缓存；HTTP+Token 认证 |
 | 2026-05-25 | v2.2 ingest 增强 + 安全加固 + MCP 工具增强 | 融资快照；API Key 三服务加固；generate_brief/search_web MCP |
