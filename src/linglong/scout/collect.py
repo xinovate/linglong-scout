@@ -285,8 +285,9 @@ def _parse_opengithub_table(
             continue
         seen.add(full_name)
 
+        escaped = re.escape(full_name)
         desc_match = re.search(
-            r"re.escape(full_name).*?项目描述[：:]\s*(.+?)(?:\n|$)",
+            rf"{escaped}.*?项目描述[：:]\s*(.+?)(?:\n|$)",
             md,
             re.DOTALL,
         )

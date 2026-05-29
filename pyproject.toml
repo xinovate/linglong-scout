@@ -14,7 +14,6 @@ dependencies = [
     "mcp[cli]>=1.0",
     "httpx>=0.25",
     "feedparser>=6.0",
-    "schedule>=1.2",
     "starlette",
     "uvicorn",
     "redis>=5.0",
