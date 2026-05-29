@@ -25,4 +25,7 @@ jobs:
       - name: Lint with ruff
         run: ruff check src/
       - name: Test with pytest
-        run: pytest tests/ -v
+        run: pytest tests/ -v --tb=short -q
+      - name: Type check with mypy (non-blocking)
+        continue-on-error: true
+        run: mypy src/linglong/ --ignore-missing-imports

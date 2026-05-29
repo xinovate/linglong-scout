@@ -2,7 +2,6 @@
 
 import re
 
-import pytest
 
 from linglong.config import IngestConfig, LLMConfig, MCPConfig, ScoutConfig
 from linglong.mcp.server import _INGEST_TOOLS

@@ -3,7 +3,6 @@
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 
 from linglong.config import get_config, set_config
 from linglong.mcp.tools import (
@@ -64,8 +63,8 @@ async def test_generate_brief_returns_output():
          patch("linglong.scout.cache.set_brief"), \
          patch("linglong.scout.raw_store.has_raw", return_value=False), \
          patch("linglong.scout.agent.IngestAgent") as mock_agent_cls, \
-         patch("linglong.scout.brief_history.BriefHistory") as mock_bh_cls, \
-         patch("linglong.scout.feedback.FeedbackStore") as mock_fs_cls:
+         patch("linglong.scout.brief_history.BriefHistory"), \
+         patch("linglong.scout.feedback.FeedbackStore"):
         mock_agent = MagicMock()
         mock_agent.run = AsyncMock(return_value="# AI 早报\n\nContent")
         mock_agent_cls.return_value = mock_agent
@@ -159,8 +158,8 @@ async def test_search_web_handles_error():
 
 async def test_execute_package_returns_results():
     with patch("linglong.scout.agent.IngestAgent") as mock_agent_cls, \
-         patch("linglong.scout.brief_history.BriefHistory") as mock_bh_cls, \
-         patch("linglong.scout.feedback.FeedbackStore") as mock_fs_cls:
+         patch("linglong.scout.brief_history.BriefHistory"), \
+         patch("linglong.scout.feedback.FeedbackStore"):
         mock_agent = MagicMock()
         mock_agent.run = AsyncMock(return_value="# AI 早报\n\nContent")
         mock_agent_cls.return_value = mock_agent

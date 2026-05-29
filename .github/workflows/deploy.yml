@@ -29,3 +29,4 @@ jobs:
             docker image prune -f
             sleep 3
             docker compose ps
+            curl -sf http://127.0.0.1:9900/ > /dev/null || (echo "Health check failed" && docker compose logs --tail=20 && exit 1)

@@ -1,7 +1,6 @@
 """Tests for FeedbackStore."""
 
 import json
-import tempfile
 from pathlib import Path
 
 from linglong.scout.feedback import FeedbackStore

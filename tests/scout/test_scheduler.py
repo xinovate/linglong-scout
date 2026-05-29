@@ -4,7 +4,6 @@ import asyncio
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 
 from linglong.scout.scheduler import _seconds_until, _run_collect, collect_scheduler, stop_scheduler
 

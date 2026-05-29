@@ -1,6 +1,5 @@
 """Tests for IngestAgent."""
 
-import json
 from datetime import date, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -8,7 +7,6 @@ import pytest
 
 from linglong.scout.agent import (
     IngestAgent,
-    _call_llm,
     _format_company_snapshot,
     _format_github,
     _format_results,
@@ -18,7 +16,6 @@ from linglong.scout.collect import (
     SourceHealth,
     _dedup_results,
     _fetch_rss_feeds,
-    _github_trending,
     _is_noise_url,
     _parse_opengithub_table,
     _searxng_search,
