@@ -1,5 +1,6 @@
-# Linglong Scout 配置
+# Linglong Scout 配置模板
 # 复制为 .scout.yml 并填入实际值
+# 敏感值通过 ${ENV_VAR} 从环境变量注入，不硬编码
 
 debug: false
 log_level: "INFO"
@@ -49,12 +50,13 @@ ingest:
   raw_data_dir: ~/linglong/data/raw        # JSON 冷存储目录
   raw_redis_ttl_days: 14                   # Redis 热 TTL（天）
 
-  # RSS 订阅源
+  # RSS 订阅源（本地开发可注释掉 RSSHub 源）
   rss_sources:
     - name: AIHOT
       url: https://aihot.virxact.com/feed
     - name: 36氪
       url: https://36kr.com/feed
+    # RSSHub 源（需要本地 RSSHub 实例）
     # - name: 36氪快讯
     #   url: http://localhost:1200/36kr/newsflashes
     - name: 量子位
@@ -95,3 +97,8 @@ mcp:
   host: "127.0.0.1"
   port: 9900
   auth_token: ${LL_MCP_AUTH_TOKEN}         # Bearer token（留空或未设置 = 无认证）
+  redis_url: ${REDIS_URL}                  # 远程部署用 Redis 验证 token
+  # allowed_hosts:                          # 远程部署需要（DNS rebinding 防护）
+  #   - "open.linglong.wiki"
+  #   - "127.0.0.1"
+  #   - "127.0.0.1:9900"
