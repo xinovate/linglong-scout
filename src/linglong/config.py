@@ -2,6 +2,7 @@
 
 import logging
 import os
+import threading
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,7 @@ class LLMConfig(BaseSettings):
         default=None,
         description="LLM base URL",
     )
-    llm_model: str = Field(default="gpt-4o", description="LLM model name")
+    llm_model: str = Field(default="", description="LLM model name")
     llm_temperature: float = Field(default=0.3, description="LLM temperature")
     llm_max_tokens: int = Field(default=8000, description="LLM max output tokens")
 
@@ -155,6 +156,7 @@ class ScoutConfig(BaseSettings):
 
 
 _config: ScoutConfig | None = None
+_config_lock = threading.Lock()
 
 
 def _find_yaml_config() -> Path | None:
@@ -193,12 +195,14 @@ def get_config() -> ScoutConfig:
     """Get or create global configuration."""
     global _config
     if _config is None:
-        yaml_path = _find_yaml_config()
-        if yaml_path:
-            logger.info("Loading config from: %s", yaml_path)
-            _config = _load_yaml_to_config(yaml_path)
-        else:
-            _config = ScoutConfig()
+        with _config_lock:
+            if _config is None:
+                yaml_path = _find_yaml_config()
+                if yaml_path:
+                    logger.info("Loading config from: %s", yaml_path)
+                    _config = _load_yaml_to_config(yaml_path)
+                else:
+                    _config = ScoutConfig()
     return _config
 
 

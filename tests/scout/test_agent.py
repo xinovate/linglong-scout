@@ -102,7 +102,7 @@ class TestIngestAgent:
         }
 
         with patch("linglong.scout.agent.collect_data", new_callable=AsyncMock, return_value=mock_raw), \
-             patch("linglong.scout.agent._call_llm", return_value="# AI 早报 · 2026-05-25\n\nMorning brief content"), \
+             patch("linglong.scout.agent._call_llm", new_callable=AsyncMock, return_value="# AI 早报 · 2026-05-25\n\nMorning brief content"), \
              patch("linglong.scout.raw_store.store_raw") as mock_store:
             mock_store.return_value = {"searxng": 1}
             output = await agent.run(pkg)
@@ -141,7 +141,7 @@ class TestIngestAgent:
         }
 
         with patch("linglong.scout.agent.collect_data", new_callable=AsyncMock, return_value=mock_raw), \
-             patch("linglong.scout.agent._call_llm", return_value="# AI 早报") as mock_llm, \
+             patch("linglong.scout.agent._call_llm", new_callable=AsyncMock, return_value="# AI 早报") as mock_llm, \
              patch("linglong.scout.raw_store.store_raw") as mock_store:
             mock_store.return_value = {"searxng": 1}
             await agent.run(pkg)
@@ -167,7 +167,8 @@ class TestIngestAgent:
         assert "github_source" in raw
         assert len(raw["searxng"]) == 1
 
-    def test_run_from_raw_skips_collection(self):
+    @pytest.mark.asyncio
+    async def test_run_from_raw_skips_collection(self):
         pkg = _make_package()
         agent = IngestAgent()
 
@@ -178,8 +179,8 @@ class TestIngestAgent:
             "rss": [],
         }
 
-        with patch("linglong.scout.agent._call_llm", return_value="# AI 早报"):
-            output = agent.run_from_raw(pkg, raw)
+        with patch("linglong.scout.agent._call_llm", new_callable=AsyncMock, return_value="# AI 早报"):
+            output = await agent.run_from_raw(pkg, raw)
 
         assert "AI 早报" in output
 
@@ -460,7 +461,7 @@ class TestLlmRetry:
         }
 
         with patch("linglong.scout.agent.collect_data", new_callable=AsyncMock, return_value=mock_raw), \
-             patch("linglong.scout.agent._call_llm", side_effect=Exception("API error")), \
+             patch("linglong.scout.agent._call_llm", new_callable=AsyncMock, side_effect=Exception("API error")), \
              patch("linglong.scout.raw_store.store_raw") as mock_store:
             mock_store.return_value = {"searxng": 1}
             with pytest.raises(Exception, match="API error"):
@@ -500,7 +501,7 @@ class TestLlmRetry:
 
         with patch("linglong.scout.cache._get_redis", return_value=mock_client), \
              patch("linglong.scout.agent.collect_data", new_callable=AsyncMock, return_value=mock_raw), \
-             patch("linglong.scout.agent._call_llm", side_effect=Exception("API error")), \
+             patch("linglong.scout.agent._call_llm", new_callable=AsyncMock, side_effect=Exception("API error")), \
              patch("linglong.scout.raw_store.store_raw") as mock_store:
             mock_store.return_value = {"searxng": 1}
             history = BriefHistory()

@@ -76,15 +76,17 @@ def _is_rsshub_url(url: str) -> bool:
     return ":1200/" in url or url.rstrip("/").endswith(":1200")
 
 
-def _github_headers() -> dict[str, str]:
+async def _github_headers() -> dict[str, str]:
     """Return GitHub API headers with token from gh CLI if available."""
     headers = {"Accept": "application/vnd.github.v3+json"}
     try:
-        import subprocess
-        token = subprocess.run(
-            ["gh", "auth", "token"],
-            capture_output=True, text=True, timeout=5,
-        ).stdout.strip()
+        proc = await asyncio.create_subprocess_exec(
+            "gh", "auth", "token",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=5)
+        token = stdout.decode().strip()
         if token:
             headers["Authorization"] = f"Bearer {token}"
     except Exception:
@@ -232,14 +234,12 @@ async def _fetch_opengithubs(
     today = date.today()
     all_repos: list[dict[str, str]] = []
     seen: set[str] = set()
-    headers = _github_headers()
+    headers = await _github_headers()
 
     for period, (repo, path_fn, growth_label) in _TREND_PERIODS.items():
         limit = limits.get(period, 0)
         if limit <= 0:
             continue
-
-        path = path_fn(today)
 
         try:
             async with httpx.AsyncClient(timeout=15) as client:
@@ -286,7 +286,7 @@ def _parse_opengithub_table(
         seen.add(full_name)
 
         desc_match = re.search(
-            rf"re.escape(full_name).*?项目描述[：:]\s*(.+?)(?:\n|$)",
+            r"re.escape(full_name).*?项目描述[：:]\s*(.+?)(?:\n|$)",
             md,
             re.DOTALL,
         )
@@ -370,7 +370,7 @@ async def _github_search_fallback(since_days: int, min_stars: int, limit: int) -
             "order": "desc",
             "per_page": "10",
         }
-        headers = _github_headers()
+        headers = await _github_headers()
 
         try:
             async with httpx.AsyncClient(timeout=30) as client:
@@ -406,6 +406,38 @@ async def _github_search_fallback(since_days: int, min_stars: int, limit: int) -
 
 # --- RSS ---
 
+async def fetch_single_feed(url: str, name: str = "", max_items: int = 30) -> list[dict[str, str]]:
+    """Fetch and parse a single RSS/Atom feed."""
+    config = get_config()
+    if config.ingest.rsshub_access_key and _is_rsshub_url(url):
+        sep = "&" if "?" in url else "?"
+        url = f"{url}{sep}key={config.ingest.rsshub_access_key}"
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            resp = await client.get(
+                url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+            )
+            resp.raise_for_status()
+        feed = feedparser.parse(resp.text)
+        items: list[dict[str, str]] = []
+        for entry in feed.entries[:max_items]:
+            link = getattr(entry, "link", "")
+            if not link:
+                continue
+            summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
+            clean = re.sub(r"<[^>]+>", "", summary)[:300]
+            items.append({
+                "title": getattr(entry, "title", ""),
+                "url": link,
+                "snippet": clean,
+                "source": name,
+            })
+        return items
+    except Exception as e:
+        logger.warning("RSS fetch failed for %s: %s", name or url, e)
+        return []
+
+
 async def _fetch_rss_feeds() -> list[dict[str, str]]:
     """Fetch all configured RSS feeds concurrently, return [{title, url, snippet, source}]."""
     config = get_config()
@@ -416,34 +448,8 @@ async def _fetch_rss_feeds() -> list[dict[str, str]]:
         url = src.get("url", "")
         if not url:
             return []
-        if config.ingest.rsshub_access_key and _is_rsshub_url(url):
-            sep = "&" if "?" in url else "?"
-            url = f"{url}{sep}key={config.ingest.rsshub_access_key}"
         async with sem:
-            try:
-                async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-                    resp = await client.get(
-                        url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
-                    )
-                    resp.raise_for_status()
-                feed = feedparser.parse(resp.text)
-                items: list[dict[str, str]] = []
-                for entry in feed.entries[:30]:
-                    link = getattr(entry, "link", "")
-                    if not link:
-                        continue
-                    summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
-                    clean = re.sub(r"<[^>]+>", "", summary)[:300]
-                    items.append({
-                        "title": getattr(entry, "title", ""),
-                        "url": link,
-                        "snippet": clean,
-                        "source": name,
-                    })
-                return items
-            except Exception as e:
-                logger.warning("RSS fetch failed for %s: %s", name, e)
-                return []
+            return await fetch_single_feed(url, name=name)
 
     results = await asyncio.gather(*[_fetch_one(src) for src in config.ingest.rss_sources])
 

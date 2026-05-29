@@ -4,7 +4,6 @@ Pre-searches all keywords via SearXNG, then calls LLM once with the full
 context to produce a structured morning brief in markdown.
 """
 
-import json
 import logging
 from datetime import date, timedelta
 from pathlib import Path
@@ -16,6 +15,7 @@ from linglong.config import get_config
 from linglong.scout.brief_history import BriefHistory, parse_sections
 from linglong.scout.cache import get_company_snapshot
 from linglong.scout.collect import collect as collect_data
+from linglong.scout.exceptions import LLMError
 from linglong.scout.feedback import FeedbackStore
 from linglong.scout.package import SourcePackage
 
@@ -131,14 +131,14 @@ def _load_prompt() -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _call_llm(system: str, user: str, max_tokens: int | None = None, retries: int | None = None) -> str:
+async def _call_llm(system_prompt: str, topic: str, date_str: str, max_tokens: int | None = None, retries: int | None = None) -> str:
     """Call LLM via Anthropic Messages API, with retry."""
     config = get_config()
     base_url = config.llm.llm_base_url
     api_key = config.llm.llm_api_key
     model = config.llm.llm_model
     if not base_url or not api_key or not model:
-        raise RuntimeError("LLM not configured: set llm.llm_base_url, llm.llm_api_key, llm.llm_model in .scout.yml")
+        raise LLMError("LLM not configured: set llm.llm_base_url, llm.llm_api_key, llm.llm_model in .scout.yml")
     base_url = base_url.rstrip("/")
     if max_tokens is None:
         max_tokens = config.ingest.llm_max_tokens
@@ -150,23 +150,25 @@ def _call_llm(system: str, user: str, max_tokens: int | None = None, retries: in
     last_error: Exception | None = None
     for attempt in range(retries + 1):
         try:
-            response = httpx.post(
-                f"{base_url}/v1/messages",
-                headers={
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": model,
-                    "max_tokens": max_tokens,
-                    "temperature": temperature,
-                    "messages": [
-                        {"role": "user", "content": f"{system}\n\n{user}"},
-                    ],
-                },
-                timeout=timeout,
-            )
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{base_url}/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": max_tokens,
+                        "temperature": temperature,
+                        "system": system_prompt,
+                        "messages": [
+                            {"role": "user", "content": f"请基于以上数据，生成 {topic}（{date_str}）的早报。"},
+                        ],
+                    },
+                    timeout=timeout,
+                )
             response.raise_for_status()
             data = response.json()
             return data["content"][0]["text"].strip()
@@ -176,7 +178,7 @@ def _call_llm(system: str, user: str, max_tokens: int | None = None, retries: in
                 logger.warning("LLM call attempt %d failed: %s, retrying...", attempt + 1, e)
             else:
                 logger.error("LLM call failed after %d attempts: %s", retries + 1, e)
-    raise last_error  # type: ignore[misc]
+    raise LLMError(str(last_error)) from last_error
 
 
 class IngestAgent:
@@ -204,13 +206,13 @@ class IngestAgent:
             github_source=raw["github_source"],
         )
 
-        return self._generate(package, raw, user_id=user_id)
+        return await self._generate(package, raw, user_id=user_id)
 
-    def run_from_raw(self, package: SourcePackage, raw: dict[str, Any], user_id: str = "default") -> str:
+    async def run_from_raw(self, package: SourcePackage, raw: dict[str, Any], user_id: str = "default") -> str:
         """Generate brief from pre-collected raw data (skip collection)."""
-        return self._generate(package, raw, user_id=user_id)
+        return await self._generate(package, raw, user_id=user_id)
 
-    def _generate(self, package: SourcePackage, raw: dict[str, Any], user_id: str = "default") -> str:
+    async def _generate(self, package: SourcePackage, raw: dict[str, Any], user_id: str = "default") -> str:
         """Format raw data + call LLM to produce brief."""
         all_results = _denormalize(raw["searxng"], "searxng")
         github_repos = _denormalize(raw["github"], "github")
@@ -263,7 +265,7 @@ class IngestAgent:
             len(all_results), len(github_repos), len(rss_items),
         )
         try:
-            output = _call_llm(system_prompt, search_text[:2000])
+            output = await _call_llm(system_prompt, package.topic, today)
             logger.info("LLM output: %d chars", len(output))
         except Exception as e:
             logger.error("LLM call failed, attempting fallback: %s", e)

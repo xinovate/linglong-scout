@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from linglong.scout.scheduler import _seconds_until, _run_collect, collect_scheduler
+from linglong.scout.scheduler import _seconds_until, _run_collect, collect_scheduler, stop_scheduler
 
 
 class TestSecondsUntil:
@@ -84,18 +84,18 @@ class TestCollectScheduler:
         config.ingest.collect_schedule = "06:55"
         config.ingest.packages = [{"name": "test", "topic": "AI"}]
 
-        call_count = 0
+        sleep_call_count = 0
 
-        async def fake_sleep(seconds):
-            nonlocal call_count
-            call_count += 1
-            if call_count >= 2:
-                raise asyncio.CancelledError()
+        async def fake_interruptible_sleep(seconds):
+            nonlocal sleep_call_count
+            sleep_call_count += 1
+            if sleep_call_count >= 2:
+                stop_scheduler()
 
         with patch("linglong.scout.scheduler.get_config", return_value=config), \
              patch("linglong.scout.scheduler._seconds_until", return_value=1.0), \
              patch("linglong.scout.scheduler._run_collect", new_callable=AsyncMock) as mock_run, \
-             patch("asyncio.sleep", side_effect=fake_sleep):
+             patch("linglong.scout.scheduler._interruptible_sleep", side_effect=fake_interruptible_sleep):
             task = asyncio.create_task(collect_scheduler())
             try:
                 await asyncio.wait_for(task, timeout=0.5)

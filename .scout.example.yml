@@ -10,7 +10,7 @@ log_level: "INFO"
 llm:
   llm_api_key: ""                         # Or set LL_SCOUT_LLM_API_KEY
   llm_base_url: "https://api.example.com/v1"
-  llm_model: "gpt-4o"
+  llm_model: ""                            # Required: set via LL_SCOUT_LLM_MODEL or .scout.yml
   llm_temperature: 0.3                    # LLM 采样温度
 
 # ── 信息采集 ──────────────────────────────────

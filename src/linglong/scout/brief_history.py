@@ -6,7 +6,6 @@ to inject as "already reported" context for the next run.
 
 import logging
 import re
-from datetime import date
 
 from linglong.scout.cache import (
     cleanup_history,

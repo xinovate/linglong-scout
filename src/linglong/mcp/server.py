@@ -13,6 +13,7 @@ from linglong.mcp.tools import (
     fetch_raw,
     fetch_rss,
     generate_brief,
+    init_stores,
     record_feedback,
     search_web,
 )
@@ -30,6 +31,7 @@ def create_server() -> FastMCP:
         host=config.mcp.host,
         port=config.mcp.port,
     )
+    init_stores()
     for tool in _INGEST_TOOLS:
         server.tool()(tool)
     logger.info("Registered %d scout tools (stdio mode)", len(_INGEST_TOOLS))
@@ -53,6 +55,7 @@ def create_http_app() -> Starlette:
             allowed_hosts=allowed_hosts,
         ),
     )
+    init_stores()
     for tool in _INGEST_TOOLS:
         server.tool()(tool)
     logger.info("Registered %d scout tools at /mcp/scout", len(_INGEST_TOOLS))

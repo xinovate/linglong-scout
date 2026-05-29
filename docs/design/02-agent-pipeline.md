@@ -51,7 +51,7 @@ flowchart TD
     GEN --> BUILD --> LLM
 
     subgraph LLM["LLM 调用"]
-        L1["_call_llm(prompt)"]
+        L1["_call_llm(system_prompt, topic, date)<br/>async · httpx.AsyncClient<br/>system 顶层参数 + user 触发指令"]
         L2{成功?}
         L3["重试 (最多 2 次)"]
     end
@@ -111,7 +111,7 @@ sequenceDiagram
         end
 
         AgentCore->>AgentCore: _generate() — Prompt 组装
-        AgentCore->>LLM: _call_llm(prompt)
+        AgentCore->>LLM: await _call_llm(system_prompt, topic, date)
 
         alt LLM 成功
             LLM-->>AgentCore: markdown 早报
@@ -133,8 +133,8 @@ sequenceDiagram
 
 | 配置 | 值 | 说明 |
 |------|---|------|
-| model | glm-5.1 | 智谱旗舰模型 |
-| base_url | `https://open.bigmodel.cn/api/anthropic` | Anthropic 兼容端点 |
+| model | （通过 .scout.yml 配置） | 必填，无默认值 |
+| base_url | （通过 .scout.yml 配置） | Anthropic Messages API 兼容端点 |
 | max_tokens | 8000 | 输出上限 |
 | timeout | 120s | 单次调用超时 |
 | retries | 2 | 失败重试次数 |

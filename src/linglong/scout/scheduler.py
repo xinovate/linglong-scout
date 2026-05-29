@@ -14,6 +14,14 @@ from linglong.scout.package import SourcePackage
 
 logger = logging.getLogger(__name__)
 
+_shutdown = asyncio.Event()
+
+
+def stop_scheduler() -> None:
+    """Signal the scheduler to stop after current operation completes."""
+    _shutdown.set()
+    logger.info("Scheduler shutdown requested")
+
 
 def _seconds_until(time_str: str) -> float:
     """Seconds from now until the next occurrence of HH:MM (local time)."""
@@ -24,6 +32,18 @@ def _seconds_until(time_str: str) -> float:
     if target <= now:
         target += timedelta(days=1)
     return (target - now).total_seconds()
+
+
+async def _interruptible_sleep(seconds: float) -> None:
+    """Sleep that can be interrupted by shutdown signal. Checks every 60s."""
+    remaining = seconds
+    while remaining > 0 and not _shutdown.is_set():
+        chunk = min(remaining, 60)
+        try:
+            await asyncio.wait_for(_shutdown.wait(), timeout=chunk)
+            return  # shutdown was set
+        except asyncio.TimeoutError:
+            remaining -= chunk
 
 
 async def _run_collect() -> None:
@@ -64,8 +84,13 @@ async def collect_scheduler() -> None:
 
     logger.info("Auto-collect scheduler started, next run at %s", schedule_time)
 
-    while True:
+    while not _shutdown.is_set():
         delay = _seconds_until(schedule_time)
         logger.info("Next collection in %.0f seconds", delay)
-        await asyncio.sleep(delay)
+        await _interruptible_sleep(delay)
+        if _shutdown.is_set():
+            logger.info("Scheduler stopping before collection")
+            break
         await _run_collect()
+
+    logger.info("Scheduler stopped")

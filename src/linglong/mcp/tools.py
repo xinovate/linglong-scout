@@ -9,6 +9,15 @@ from linglong.mcp._auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
 
+_feedback_store: Any = None
+
+
+def init_stores() -> None:
+    """Initialize shared stores. Called once at server startup."""
+    global _feedback_store
+    from linglong.scout.feedback import FeedbackStore
+    _feedback_store = FeedbackStore()
+
 
 async def fetch_rss(url: str, name: str | None = None, max_items: int = 20) -> str:
     """Fetch and parse an RSS feed. Returns entity previews for discussion.
@@ -17,40 +26,10 @@ async def fetch_rss(url: str, name: str | None = None, max_items: int = 20) -> s
     before writing any results to the knowledge store via write_entity.
     """
     try:
-        import re
+        from linglong.scout.collect import fetch_single_feed
 
-        import feedparser
-        import httpx
-
-        config = get_config()
-        if config.ingest.rsshub_access_key and (":1200/" in url or url.rstrip("/").endswith(":1200")):
-            sep = "&" if "?" in url else "?"
-            url = f"{url}{sep}key={config.ingest.rsshub_access_key}"
-
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-            resp = await client.get(
-                url,
-                headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
-            )
-            resp.raise_for_status()
-            xml_text = resp.text
-
-        feed = feedparser.parse(xml_text)
-        items = []
-        for entry in feed.entries[:max_items]:
-            summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
-            clean = re.sub(r"<[^>]+>", "", summary)[:300]
-            items.append({
-                "title": getattr(entry, "title", ""),
-                "url": getattr(entry, "link", ""),
-                "snippet": clean,
-                "source": name or url,
-            })
-
-        return json.dumps(
-            {"results": items, "count": len(items)},
-            ensure_ascii=False,
-        )
+        items = await fetch_single_feed(url, name=name or "", max_items=max_items)
+        return json.dumps({"results": items, "count": len(items)}, ensure_ascii=False)
     except Exception as exc:
         logger.exception("fetch_rss failed")
         return json.dumps({"error": str(exc)}, ensure_ascii=False)
@@ -105,7 +84,7 @@ async def record_feedback(
     try:
         from linglong.scout.feedback import FeedbackStore
 
-        store = FeedbackStore()
+        store = _feedback_store or FeedbackStore()
         if feedback not in ("useful", "not_interested"):
             return json.dumps(
                 {"error": "feedback must be 'useful' or 'not_interested'"},
@@ -157,7 +136,7 @@ async def execute_package(
         )
 
         config = get_config()
-        feedback_store = FeedbackStore()
+        feedback_store = _feedback_store or FeedbackStore()
         brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
         agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
         user_id = get_current_user_id()
@@ -211,7 +190,7 @@ async def generate_brief() -> str:
             }, ensure_ascii=False)
 
         package = SourcePackage(**config.ingest.packages[0])
-        feedback_store = FeedbackStore()
+        feedback_store = _feedback_store or FeedbackStore()
         brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
         agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
 
@@ -224,7 +203,7 @@ async def generate_brief() -> str:
                 "github_source": meta.get("github_source", ""),
                 "rss": raw_data.get("rss", []),
             }
-            output = agent.run_from_raw(package, raw, user_id=user_id)
+            output = await agent.run_from_raw(package, raw, user_id=user_id)
         else:
             output = await agent.run(package, user_id=user_id)
 
@@ -247,39 +226,18 @@ async def generate_brief() -> str:
 async def search_web(query: str, max_results: int = 10) -> str:
     """Search the web via SearXNG. Returns results including web page title, web page URL, web page summary, website name, website icon, etc."""
     try:
-        import httpx
+        from linglong.scout.collect import _searxng_search
 
-        config = get_config()
-        base_url = config.ingest.searxng_url.rstrip("/")
-        timeout = config.ingest.search_timeout
-
-        params = {
-            "q": query,
-            "format": "json",
-            "categories": "general",
-        }
-        headers: dict[str, str] = {}
-        if config.ingest.searxng_api_key:
-            headers["Authorization"] = f"Bearer {config.ingest.searxng_api_key}"
-
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            resp = await client.get(f"{base_url}/search", params=params, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
-
-        results = []
-        for r in data.get("results", [])[:max_results]:
-            results.append({
+        results = await _searxng_search(query, max_results=max_results)
+        formatted = []
+        for r in results:
+            formatted.append({
                 "title": r.get("title", ""),
                 "url": r.get("url", ""),
-                "snippet": r.get("content", ""),
-                "engine": r.get("engine", ""),
+                "snippet": r.get("snippet", ""),
+                "engine": "",
             })
-
-        return json.dumps(
-            {"results": results, "count": len(results)},
-            ensure_ascii=False,
-        )
+        return json.dumps({"results": formatted, "count": len(formatted)}, ensure_ascii=False)
     except Exception as exc:
         logger.exception("search_web failed")
         return json.dumps({"error": str(exc)}, ensure_ascii=False)

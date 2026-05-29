@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 def cmd_brief(args):
     """Generate morning brief and cache to Redis."""
     import asyncio
-    import json
     from datetime import date
 
     from linglong.config import get_config
@@ -53,7 +52,7 @@ def cmd_brief(args):
             "github_source": meta.get("github_source", ""),
             "rss": raw_data.get("rss", []),
         }
-        output = agent.run_from_raw(package, raw)
+        output = asyncio.run(agent.run_from_raw(package, raw))
     else:
         output = asyncio.run(agent.run(package))
 
@@ -68,7 +67,6 @@ def cmd_brief(args):
 def cmd_ingest(args):
     """Run scout packages."""
     import asyncio
-    from pathlib import Path
 
     from linglong.config import get_config
     from linglong.scout.agent import IngestAgent

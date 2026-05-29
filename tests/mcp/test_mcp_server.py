@@ -20,28 +20,11 @@ from linglong.mcp.tools import (
 
 
 async def test_fetch_rss_returns_previews():
-    rss_xml = """<?xml version="1.0"?>
-    <rss version="2.0">
-      <channel>
-        <title>Test Feed</title>
-        <item>
-          <title>Test Article</title>
-          <link>https://example.com/article1</link>
-          <description>Article content here</description>
-        </item>
-      </channel>
-    </rss>"""
-
-    mock_response = MagicMock()
-    mock_response.text = rss_xml
-    mock_response.raise_for_status = MagicMock()
-
-    mock_client = AsyncMock()
-    mock_client.get = AsyncMock(return_value=mock_response)
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    mock_items = [
+        {"title": "Test Article", "url": "https://example.com/article1",
+         "snippet": "Article content here", "source": "test-feed"},
+    ]
+    with patch("linglong.scout.collect.fetch_single_feed", return_value=mock_items):
         result = await fetch_rss("https://example.com/feed.xml", name="test-feed")
         data = json.loads(result)
 
@@ -51,44 +34,22 @@ async def test_fetch_rss_returns_previews():
 
 
 async def test_fetch_rss_handles_error():
-    mock_client = AsyncMock()
-    mock_client.get = AsyncMock(side_effect=Exception("Connection failed"))
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    with patch("linglong.scout.collect.fetch_single_feed", side_effect=Exception("Connection failed")):
         result = await fetch_rss("https://invalid.example/feed.xml")
         data = json.loads(result)
 
     assert "error" in data
 
 
-async def test_fetch_rss_rsshub_key_only_for_rsshub_urls():
-    rss_xml = '<?xml version="1.0"?><rss version="2.0"><channel><title>T</title></channel></rss>'
-    mock_response = MagicMock()
-    mock_response.text = rss_xml
-    mock_response.raise_for_status = MagicMock()
-
-    mock_client = AsyncMock()
-    mock_client.get = AsyncMock(return_value=mock_response)
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
-
-    config_mock = MagicMock()
-    config_mock.ingest.rsshub_access_key = "test-key"
-
-    with patch("httpx.AsyncClient", return_value=mock_client), \
-         patch("linglong.mcp.tools.get_config", return_value=config_mock):
-        # Non-RSSHub URL should NOT get key
-        await fetch_rss("https://techcrunch.com/feed/")
-        called_url = mock_client.get.call_args.args[0]
-        assert "key=" not in called_url
-
-        mock_client.get.reset_mock()
-        # RSSHub URL should get key
-        await fetch_rss("http://localhost:1200/36kr/newsflashes")
-        called_url = mock_client.get.call_args.args[0]
-        assert "key=test-key" in called_url
+async def test_fetch_rss_delegates_to_fetch_single_feed():
+    mock_items = [
+        {"title": "Article", "url": "https://example.com/a", "snippet": "s", "source": "feed"},
+    ]
+    with patch("linglong.scout.collect.fetch_single_feed", return_value=mock_items) as mock_fetch:
+        await fetch_rss("https://example.com/feed.xml", name="my-feed", max_items=5)
+        mock_fetch.assert_called_once_with(
+            "https://example.com/feed.xml", name="my-feed", max_items=5,
+        )
 
 
 # --- generate_brief ---
@@ -173,21 +134,10 @@ async def test_fetch_github_trending_handles_error():
 
 
 async def test_search_web_returns_results():
-    mock_data = {
-        "results": [
-            {"title": "AI News", "url": "https://example.com", "content": "Summary", "engine": "google"},
-        ]
-    }
-    mock_response = MagicMock()
-    mock_response.json.return_value = mock_data
-    mock_response.raise_for_status = MagicMock()
-
-    mock_client = AsyncMock()
-    mock_client.get = AsyncMock(return_value=mock_response)
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    mock_results = [
+        {"title": "AI News", "url": "https://example.com", "snippet": "Summary"},
+    ]
+    with patch("linglong.scout.collect._searxng_search", return_value=mock_results):
         result = await search_web("AI news", max_results=5)
         data = json.loads(result)
 
@@ -197,12 +147,7 @@ async def test_search_web_returns_results():
 
 
 async def test_search_web_handles_error():
-    mock_client = AsyncMock()
-    mock_client.get = AsyncMock(side_effect=Exception("Connection failed"))
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    with patch("linglong.scout.collect._searxng_search", side_effect=Exception("Connection failed")):
         result = await search_web("test query")
         data = json.loads(result)
 

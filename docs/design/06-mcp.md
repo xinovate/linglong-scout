@@ -16,7 +16,8 @@ Linglong Scout 通过 MCP Server 暴露采集工具，同时提供 CLI 命令供
 flowchart TD
     START(["python -m linglong.mcp"]) --> CONFIG["get_config()"]
     CONFIG --> CREATE["create_server()"]
-    CREATE --> REGISTER["_INGEST_TOOLS 注册"]
+    CREATE --> INIT["init_stores()<br/>FeedbackStore 单例"]
+    INIT --> REGISTER["_INGEST_TOOLS 注册"]
     REGISTER --> TRANSPORT{mcp.transport?}
 
     TRANSPORT -->|stdio| STDIO["server.run(transport='stdio')<br/>子进程 stdio 管道"]
@@ -66,7 +67,7 @@ sequenceDiagram
 | `fetch_raw(date, source)` | 获取结构化原始数据（Redis → fallback 文件） |
 | `execute_package(topic, keywords)` | 自定义参数执行采集+生成 |
 | `fetch_github_trending(daily, weekly, monthly)` | GitHub 趋势项目（三级 fallback） |
-| `fetch_rss(url)` | 采集单个 RSS feed |
+| `fetch_rss(url, name?, max_items?)` | 采集单个 RSS feed |
 | `search_web(query)` | SearXNG 搜索 |
 | `record_feedback(hash, feedback)` | 记录用户偏好 |
 
