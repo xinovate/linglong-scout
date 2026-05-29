@@ -97,7 +97,6 @@ def cmd_collect(args):
     from datetime import date
 
     from linglong.config import get_config
-    from linglong.scout.agent import IngestAgent
     from linglong.scout.package import SourcePackage
     from linglong.scout.raw_store import store_raw
 
@@ -107,8 +106,8 @@ def cmd_collect(args):
         sys.exit(1)
 
     package = SourcePackage(**config.ingest.packages[0])
-    agent = IngestAgent()
-    raw = asyncio.run(agent.collect(package))
+    from linglong.scout.collect import collect as collect_data
+    raw = asyncio.run(collect_data(package))
 
     today = date.today().isoformat()
     counts = store_raw(

@@ -25,27 +25,29 @@ def _get_redis() -> redis.Redis:
     return redis.from_url(url, decode_responses=True)
 
 
-def get_brief(target_date: str | None = None) -> str | None:
-    """Get cached brief for a date. Returns markdown or None."""
+def get_brief(target_date: str | None = None, user_id: str = "default") -> str | None:
+    """Get cached brief for a date + user. Returns markdown or None."""
     d = target_date or date.today().isoformat()
+    key = f"{_BRIEF_PREFIX}{d}:{user_id}"
     try:
         r = _get_redis()
-        data = r.get(f"{_BRIEF_PREFIX}{d}")
+        data = r.get(key)
         if data:
-            logger.info("Brief cache hit for %s", d)
+            logger.info("Brief cache hit for %s/%s", d, user_id)
         return data
     except Exception as e:
         logger.warning("Redis brief get failed: %s", e)
         return None
 
 
-def set_brief(content: str, target_date: str | None = None) -> None:
-    """Cache brief for a date with TTL."""
+def set_brief(content: str, target_date: str | None = None, user_id: str = "default") -> None:
+    """Cache brief for a date + user with TTL."""
     d = target_date or date.today().isoformat()
+    key = f"{_BRIEF_PREFIX}{d}:{user_id}"
     try:
         r = _get_redis()
-        r.setex(f"{_BRIEF_PREFIX}{d}", _BRIEF_TTL, content)
-        logger.info("Brief cached for %s (%d chars)", d, len(content))
+        r.setex(key, _BRIEF_TTL, content)
+        logger.info("Brief cached for %s/%s (%d chars)", d, user_id, len(content))
     except Exception as e:
         logger.warning("Redis brief set failed: %s", e)
 

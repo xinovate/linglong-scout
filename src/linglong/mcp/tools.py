@@ -168,8 +168,9 @@ async def generate_brief() -> str:
                 ensure_ascii=False,
             )
 
+        user_id = get_current_user_id()
         today = date.today().isoformat()
-        cached = get_brief(today)
+        cached = get_brief(today, user_id=user_id)
         if cached:
             return json.dumps({
                 "package": config.ingest.packages[0].get("name", ""),
@@ -182,7 +183,6 @@ async def generate_brief() -> str:
         feedback_store = FeedbackStore()
         brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
         agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
-        user_id = get_current_user_id()
 
         if has_raw(today):
             raw_data = get_raw(today)
@@ -198,7 +198,7 @@ async def generate_brief() -> str:
             output = await agent.run(package, user_id=user_id)
 
         if output:
-            set_brief(output, today)
+            set_brief(output, today, user_id=user_id)
 
         response: dict[str, Any] = {
             "package": package.name,
