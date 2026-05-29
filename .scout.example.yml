@@ -85,10 +85,86 @@ ingest:
     - name: ai-morning-brief
       topic: AI 早报
       search_queries:
+        # ── 关键人物 ──
         - keywords:
             - "Karpathy AI latest opinion 2026"
+            - "LeCun JEPA world model latest"
+            - "Ilya Sutskever SSI news 2026"
+            - "Geoffrey Hinton AI warning 2026"
             - "Sam Altman OpenAI latest 2026"
             - "Jensen Huang AI latest 2026"
+            - "Dario Amodei Anthropic latest 2026"
+            - "Demis Hassabis DeepMind latest 2026"
+            - "何恺明 AI 最新研究 2026"
+            - "李飞飞 AI 最新动态 2026"
+            - "Andrew Ng AI opinion 2026"
+            - "Jim Fan Nvidia AI latest 2026"
+            - "Harrison Chase LangChain latest 2026"
+            - "AI 关键人物 动态 2026"
+            - "梁文锋 DeepSeek 动态"
+            - "周靖人 阿里 AI 动态"
+            - "王小川 百川智能 动态"
+            - "李开复 零一万物 动态"
+          max_results: 3
+        # ── 公司动态 ──
+        - keywords:
+            - "OpenAI GPT latest news May 2026"
+            - "Anthropic Claude 4 latest 2026"
+            - "Google Gemini 2.5 release 2026"
+            - "Meta AI Llama 4 news 2026"
+            - "xAI Grok latest news 2026"
+            - "DeepSeek R2 最新动态 2026"
+            - "月之暗面 Kimi K2 最新动态 2026"
+            - "智谱AI GLM 最新动态 2026"
+            - "MiniMax 海螺AI 最新动态 2026"
+            - "字节跳动 豆包 Seedance 最新动态"
+            - "阿里 通义千问 Qwen3 最新动态"
+            - "腾讯 混元 Hunyuan 最新动态"
+          max_results: 5
+        # ── 融资估值 ──
+        - keywords:
+            - "AI company funding valuation 2026"
+            - "OpenAI Anthropic valuation 2026"
+            - "AI company stock price change May 2026"
+            - "AI 公司融资 估值 2026"
+            - "AI 股价 涨跌 2026年5月"
+          max_results: 3
+        # ── 政策动态 ──
+        - keywords:
+            - "AI regulation policy 2026"
+            - "EU AI Act latest 2026"
+            - "AI chip export control 2026"
+            - "AI copyright lawsuit 2026"
+            - "AI safety governance international 2026"
+            - "AI 监管 政策 2026"
+            - "生成式AI服务管理 备案 2026"
+            - "深度合成内容标识 最新规定"
+            - "人工智能立法 进展 2026"
+            - "网信办 算法备案 2026"
+            - "芯片出口管制 英伟达 最新"
+            - "AI 训练数据 版权 诉讼"
+            - "AI 安全峰会 治理框架 2026"
+            - "国务院 AI 人工智能 政策 2026"
+            - "工信部 AI 大模型 备案 最新"
+            - "人工智能 治理 国际合作 2026"
+          max_results: 5
+        # ── 开源趋势 ──
+        - keywords:
+            - "open source AI model release 2026"
+            - "AI open source project new stars"
+          max_results: 5
+        # ── 应用落地 ──
+        - keywords:
+            - "Claude Code AI coding agent 2026"
+            - "Cursor Windsurf AI coding 2026"
+            - "Manus AI agent latest news 2026"
+            - "MCP Model Context Protocol latest 2026"
+            - "AI agent framework autonomous 2026"
+            - "AI video generation Kling Sora 2026"
+            - "Unitree robot latest news 2026"
+            - "AI 产品发布 2026年5月"
+            - "AI Agent 自主智能体 最新"
+            - "AI 编程工具 最新 2026"
           max_results: 3
 
 # ── MCP Server ────────────────────────────────
