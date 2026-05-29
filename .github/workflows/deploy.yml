@@ -3,6 +3,12 @@ name: Deploy to Server
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'pyproject.toml'
+      - '.github/workflows/deploy.yml'
 
 jobs:
   deploy:
