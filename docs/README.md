@@ -92,7 +92,7 @@ graph TD
 | 配置 | 默认值 | 说明 |
 |------|--------|------|
 | `mcp.redis_url` | `""` | Redis 连接地址（如 `redis://localhost:6379/0`） |
-| `brief_schedule_time` | `07:00` | 播报时段标记（如 `2026-05-25 07:00 → 2026-05-26 07:00`） |
+| `ingest.brief_schedule_time` | `07:00` | 播报时段标记（如 `2026-05-25 07:00 → 2026-05-26 07:00`） |
 | `collect_schedule` | `06:55` | 每天自动采集时间（HH:MM），留空禁用 |
 
 Redis 数据结构：`scout:brief:{date}:{user_id}`（TTL 25h，按用户隔离）+ `scout:history:{date}`（TTL 16d）+ `scout:raw:{date}:{source}`（TTL 14d）。

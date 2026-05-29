@@ -285,7 +285,6 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 | `keywords` | string[] | 否 | `null` | SearXNG 搜索关键词，空则跳过搜索 |
 | `name` | string | 否 | `"custom-brief"` | 包名标识 |
 | `max_results` | int | 否 | 5 | 每个关键词返回结果上限 |
-| `max_age_days` | int | 否 | 3 | 搜索结果最大天数 |
 
 ### 请求示例
 

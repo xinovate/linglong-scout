@@ -4,12 +4,14 @@
 
 debug: false
 log_level: "INFO"
+# log_file: ~/linglong/logs/scout.log      # 日志文件路径，null 禁用文件日志
 
 # ── LLM ──────────────────────────────────────
 llm:
   llm_api_key: ""                         # Or set LL_SCOUT_LLM_API_KEY
   llm_base_url: "https://api.example.com/v1"
   llm_model: "gpt-4o"
+  llm_temperature: 0.3                    # LLM 采样温度
 
 # ── 信息采集 ──────────────────────────────────
 ingest:
@@ -82,16 +84,12 @@ ingest:
   packages:
     - name: ai-morning-brief
       topic: AI 早报
-      output:
-        format: morning-brief
-        persist: true
       search_queries:
         - keywords:
             - "Karpathy AI latest opinion 2026"
             - "Sam Altman OpenAI latest 2026"
             - "Jensen Huang AI latest 2026"
           max_results: 3
-          max_age_days: 3
 
 # ── MCP Server ────────────────────────────────
 mcp:

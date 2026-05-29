@@ -145,6 +145,7 @@ def _call_llm(system: str, user: str, max_tokens: int | None = None, retries: in
     if retries is None:
         retries = config.ingest.llm_retries
     timeout = config.ingest.llm_timeout
+    temperature = config.llm.llm_temperature
 
     last_error: Exception | None = None
     for attempt in range(retries + 1):
@@ -159,6 +160,7 @@ def _call_llm(system: str, user: str, max_tokens: int | None = None, retries: in
                 json={
                     "model": model,
                     "max_tokens": max_tokens,
+                    "temperature": temperature,
                     "messages": [
                         {"role": "user", "content": f"{system}\n\n{user}"},
                     ],

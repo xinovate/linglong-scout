@@ -127,7 +127,6 @@ async def execute_package(
     keywords: list[str] | None = None,
     name: str = "custom-brief",
     max_results: int = 5,
-    max_age_days: int = 3,
 ) -> str:
     """Execute a custom scout package with given parameters.
 
@@ -139,7 +138,6 @@ async def execute_package(
         keywords: Search keywords for SearXNG. If empty, skips web search.
         name: Package name identifier.
         max_results: Max results per keyword.
-        max_age_days: Max age in days for search results.
     """
     try:
         from linglong.scout.agent import IngestAgent
@@ -154,7 +152,6 @@ async def execute_package(
                 SearchQueryConfig(
                     keywords=keywords or [],
                     max_results=max_results,
-                    max_age_days=max_age_days,
                 ),
             ] if keywords else [],
         )

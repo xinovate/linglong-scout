@@ -1,20 +1,9 @@
 """Source package model and YAML loader."""
 
 from pathlib import Path
-from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field
-
-
-class SourceDefinition(BaseModel):
-    """A single source within a package."""
-
-    id: str
-    type: str
-    enabled: bool = True
-    config: dict[str, Any] = Field(default_factory=dict)
-    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class SearchQueryConfig(BaseModel):
@@ -22,14 +11,6 @@ class SearchQueryConfig(BaseModel):
 
     keywords: list[str] = Field(default_factory=list)
     max_results: int = 5
-    max_age_days: int = 7
-
-
-class OutputConfig(BaseModel):
-    """Output configuration for a package."""
-
-    format: str = ""  # morning-brief | weekly | empty = no formatting
-    persist: bool = False
 
 
 class SourcePackage(BaseModel):
@@ -37,11 +18,9 @@ class SourcePackage(BaseModel):
 
     name: str
     topic: str
-    schedule: str = "0 7 * * *"
-    enabled: bool = True
-    sources: list[SourceDefinition] = Field(default_factory=list)
     search_queries: list[SearchQueryConfig] = Field(default_factory=list)
-    output: OutputConfig = Field(default_factory=OutputConfig)
+
+    model_config = {"extra": "ignore"}
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "SourcePackage":
