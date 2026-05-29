@@ -408,8 +408,13 @@ async def _github_search_fallback(since_days: int, min_stars: int, limit: int) -
 # --- RSS ---
 
 
-def _validate_feed_url(url: str) -> None:
+def _validate_feed_url(url: str, *, allow_internal: bool = False) -> None:
     """Validate URL to prevent SSRF attacks.
+
+    Args:
+        url: Feed URL to validate.
+        allow_internal: Skip private-network checks. Use only for
+            admin-configured sources (not user-supplied URLs).
 
     Raises:
         ValueError: If URL uses disallowed scheme or targets internal network.
@@ -419,6 +424,8 @@ def _validate_feed_url(url: str) -> None:
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise ValueError(f"URL scheme not allowed: {parsed.scheme} (only http/https)")
+    if allow_internal:
+        return
     host = parsed.hostname or ""
     if not host:
         raise ValueError("URL must have a hostname")
@@ -438,9 +445,9 @@ def _validate_feed_url(url: str) -> None:
         raise ValueError(f"URL targets internal network: {host}")
 
 
-async def fetch_single_feed(url: str, name: str = "", max_items: int = 30) -> list[dict[str, str]]:
+async def fetch_single_feed(url: str, name: str = "", max_items: int = 30, *, allow_internal: bool = False) -> list[dict[str, str]]:
     """Fetch and parse a single RSS/Atom feed."""
-    _validate_feed_url(url)
+    _validate_feed_url(url, allow_internal=allow_internal)
     config = get_config()
     if config.ingest.rsshub_access_key and _is_rsshub_url(url):
         sep = "&" if "?" in url else "?"
@@ -482,7 +489,7 @@ async def _fetch_rss_feeds() -> list[dict[str, str]]:
         if not url:
             return []
         async with sem:
-            return await fetch_single_feed(url, name=name)
+            return await fetch_single_feed(url, name=name, allow_internal=True)
 
     results = await asyncio.gather(*[_fetch_one(src) for src in config.ingest.rss_sources])
 
