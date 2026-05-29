@@ -8,6 +8,7 @@ import pytest
 from linglong.config import get_config, set_config
 from linglong.mcp.tools import (
     execute_package,
+    fetch_github_trending,
     fetch_raw,
     fetch_rss,
     generate_brief,
@@ -137,6 +138,32 @@ async def test_generate_brief_handles_error():
          patch("linglong.scout.raw_store.has_raw", return_value=False), \
          patch("linglong.scout.agent.IngestAgent", side_effect=Exception("Agent failed")):
         result = await generate_brief()
+        data = json.loads(result)
+
+    assert "error" in data
+
+
+# --- fetch_github_trending ---
+
+
+async def test_fetch_github_trending_returns_repos():
+    mock_repos = [
+        {"title": "ai-toolkit (+150⭐ 日增长)", "url": "https://github.com/example/ai-toolkit",
+         "snippet": "AI toolkit", "stars": "5000", "growth": "150", "period": "日增长"},
+    ]
+    with patch("linglong.scout.collect._github_trending", return_value=(mock_repos, "opengithubs")):
+        result = await fetch_github_trending(daily=5)
+        data = json.loads(result)
+
+    assert "error" not in data
+    assert data["count"] == 1
+    assert data["source"] == "opengithubs"
+    assert data["results"][0]["title"].startswith("ai-toolkit")
+
+
+async def test_fetch_github_trending_handles_error():
+    with patch("linglong.scout.collect._github_trending", side_effect=Exception("GitHub API failed")):
+        result = await fetch_github_trending()
         data = json.loads(result)
 
     assert "error" in data

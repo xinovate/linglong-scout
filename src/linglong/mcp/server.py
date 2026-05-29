@@ -9,6 +9,7 @@ from mcp.server.fastmcp import FastMCP
 from linglong.config import get_config
 from linglong.mcp.tools import (
     execute_package,
+    fetch_github_trending,
     fetch_raw,
     fetch_rss,
     generate_brief,
@@ -18,7 +19,7 @@ from linglong.mcp.tools import (
 
 logger = logging.getLogger(__name__)
 
-_INGEST_TOOLS = [fetch_raw, fetch_rss, generate_brief, execute_package, search_web, record_feedback]
+_INGEST_TOOLS = [fetch_raw, fetch_rss, fetch_github_trending, generate_brief, execute_package, search_web, record_feedback]
 
 
 def create_server() -> FastMCP:
