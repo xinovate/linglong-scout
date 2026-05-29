@@ -1,16 +1,16 @@
-"""Feedback store — user preference tracking for scout results."""
+"""Feedback store — per-user preference tracking for scout results."""
 
 import json
 import logging
 import sqlite3
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
 _CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS ingest_feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL DEFAULT 'default',
     content_hash TEXT NOT NULL,
     feedback TEXT NOT NULL,
     tags TEXT,
@@ -19,7 +19,12 @@ CREATE TABLE IF NOT EXISTS ingest_feedback (
 """
 
 _CREATE_INDEX_SQL = """
-CREATE INDEX IF NOT EXISTS idx_feedback_hash ON ingest_feedback(content_hash)
+CREATE INDEX IF NOT EXISTS idx_feedback_user_hash
+ON ingest_feedback(user_id, content_hash)
+"""
+
+_MIGRATE_ADD_USER_ID_SQL = """
+ALTER TABLE ingest_feedback ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'
 """
 
 
@@ -38,6 +43,14 @@ class FeedbackStore:
             conn.execute(_CREATE_TABLE_SQL)
             conn.execute(_CREATE_INDEX_SQL)
             conn.commit()
+            self._migrate(conn)
+
+    def _migrate(self, conn: sqlite3.Connection) -> None:
+        try:
+            conn.execute(_MIGRATE_ADD_USER_ID_SQL)
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self.db_path))
@@ -49,36 +62,46 @@ class FeedbackStore:
         content_hash: str,
         feedback: str,
         tags: list[str] | None = None,
+        user_id: str = "default",
     ) -> None:
-        """Record feedback for an scout result.
+        """Record feedback for a scout result.
 
         Args:
             content_hash: Hash identifying the news item.
             feedback: "useful" or "not_interested".
             tags: Tags associated with the news item.
+            user_id: User identifier extracted from token.
         """
         from datetime import UTC, datetime
 
         now = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
-                "INSERT INTO ingest_feedback (content_hash, feedback, tags, created_at) "
-                "VALUES (?, ?, ?, ?)",
-                (content_hash, feedback, json.dumps(tags or []), now),
+                "INSERT INTO ingest_feedback "
+                "(user_id, content_hash, feedback, tags, created_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (user_id, content_hash, feedback, json.dumps(tags or []), now),
             )
             conn.commit()
 
-        logger.info("Recorded feedback: %s for %s (tags=%s)", feedback, content_hash[:8], tags)
+        logger.info(
+            "Recorded feedback: %s for %s (user=%s, tags=%s)",
+            feedback,
+            content_hash[:8],
+            user_id,
+            tags,
+        )
 
-    def get_preferences(self) -> dict[str, float]:
-        """Compute preference weights from feedback history.
+    def get_preferences(self, user_id: str = "default") -> dict[str, float]:
+        """Compute preference weights from feedback history for a user.
 
         Returns:
-            Tag → weight mapping. Positive = preferred, negative = avoided.
+            Tag to weight mapping. Positive = preferred, negative = avoided.
         """
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT feedback, tags FROM ingest_feedback"
+                "SELECT feedback, tags FROM ingest_feedback WHERE user_id = ?",
+                (user_id,),
             ).fetchall()
 
         tag_scores: dict[str, list[float]] = {}
@@ -93,21 +116,20 @@ class FeedbackStore:
 
         preferences: dict[str, float] = {}
         for tag, scores in tag_scores.items():
-            # Normalize to [-1, 1]
             preferences[tag] = sum(scores) / len(scores) if scores else 0.0
 
         return preferences
 
-    def get_preference_text(self) -> str:
+    def get_preference_text(self, user_id: str = "default") -> str:
         """Generate preference summary text for LLM prompt injection."""
-        prefs = self.get_preferences()
+        prefs = self.get_preferences(user_id)
         if not prefs:
             return ""
 
         lines = ["用户历史偏好："]
-        # Sort by absolute weight (most opinionated first)
-        for tag, weight in sorted(prefs.items(), key=lambda x: abs(x[1]), reverse=True)[:8]:
-            useful = int(sum(1 for _ in []))  # placeholder
+        for tag, weight in sorted(prefs.items(), key=lambda x: abs(x[1]), reverse=True)[
+            :8
+        ]:
             if weight > 0:
                 lines.append(f"- {tag} 类型：偏好（权重 {weight:.1f}）")
             elif weight < 0:

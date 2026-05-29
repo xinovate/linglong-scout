@@ -82,3 +82,6 @@ mcp:
   port: 9900
   auth_token: ${LL_MCP_AUTH_TOKEN}
   redis_url: ${REDIS_URL}
+  allowed_hosts:
+    - "open.linglong.wiki"
+    - "127.0.0.1"

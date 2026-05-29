@@ -1,18 +1,46 @@
 """Token authentication middleware for MCP HTTP server."""
 
+import contextvars
 import logging
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from linglong.mcp.token import parse_token
+
 logger = logging.getLogger(__name__)
+
+_request_token: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "request_token", default=""
+)
+_request_user_id: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "request_user_id", default="default"
+)
+_request_username: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "request_username", default="unknown"
+)
+
+
+def get_current_user_id() -> str:
+    """Get the user_id of the current authenticated request."""
+    return _request_user_id.get()
+
+
+def get_current_username() -> str:
+    """Get the username of the current authenticated request."""
+    return _request_username.get()
+
+
+def get_current_token() -> str:
+    """Get the full token of the current authenticated request."""
+    return _request_token.get()
 
 
 class TokenAuthMiddleware(BaseHTTPMiddleware):
     """Validate Bearer token against Redis store.
 
-    Token format: linglong-{module}-{random}
+    Token format: ll-scout-{username}-{12-char-uuid}
     Redis key: same as token value, with value 'active'.
     If Redis is not configured, falls back to static token comparison.
     """
@@ -38,7 +66,6 @@ class TokenAuthMiddleware(BaseHTTPMiddleware):
             return None
 
     def _validate_token(self, token: str) -> bool:
-        # Try Redis first
         r = self._get_redis()
         if r is not None:
             try:
@@ -46,13 +73,11 @@ class TokenAuthMiddleware(BaseHTTPMiddleware):
             except Exception:
                 logger.warning("Redis query failed, falling back to static token")
 
-        # Fallback to static token
         if self._static_token:
             return token == self._static_token
         return False
 
     async def dispatch(self, request: Request, call_next):
-        # Skip non-MCP paths
         if not request.url.path.startswith("/mcp/"):
             return await call_next(request)
 
@@ -63,4 +88,10 @@ class TokenAuthMiddleware(BaseHTTPMiddleware):
         token = auth[7:]
         if not self._validate_token(token):
             return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+        parsed = parse_token(token)
+        _request_token.set(token)
+        _request_user_id.set(parsed["user_id"])
+        _request_username.set(parsed["username"])
+
         return await call_next(request)

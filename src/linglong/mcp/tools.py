@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from linglong.config import get_config
+from linglong.mcp._auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,8 @@ def record_feedback(
                 {"error": "feedback must be 'useful' or 'not_interested'"},
                 ensure_ascii=False,
             )
-        store.record(content_hash, feedback, tags)
+        user_id = get_current_user_id()
+        store.record(content_hash, feedback, tags, user_id=user_id)
         return json.dumps(
             {"status": "recorded", "content_hash": content_hash, "feedback": feedback},
             ensure_ascii=False,
@@ -122,7 +124,8 @@ def execute_package(package_path: str) -> str:
         feedback_store = FeedbackStore()
         brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
         agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
-        output = _run_async(agent.run(package))
+        user_id = get_current_user_id()
+        output = _run_async(agent.run(package, user_id=user_id))
 
         response: dict[str, Any] = {
             "package": package.name,
@@ -175,6 +178,7 @@ def generate_brief() -> str:
         feedback_store = FeedbackStore()
         brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
         agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
+        user_id = get_current_user_id()
 
         if has_raw(today):
             raw_data = get_raw(today)
@@ -185,9 +189,9 @@ def generate_brief() -> str:
                 "github_source": meta.get("github_source", ""),
                 "rss": raw_data.get("rss", []),
             }
-            output = agent.run_from_raw(package, raw)
+            output = agent.run_from_raw(package, raw, user_id=user_id)
         else:
-            output = _run_async(agent.run(package))
+            output = _run_async(agent.run(package, user_id=user_id))
 
         if output:
             set_brief(output, today)

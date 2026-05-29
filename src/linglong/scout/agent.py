@@ -702,7 +702,7 @@ class IngestAgent:
             "rss": rss_items,
         }
 
-    async def run(self, package: SourcePackage) -> str:
+    async def run(self, package: SourcePackage, user_id: str = "default") -> str:
         """Full pipeline: collect → store raw → format → LLM → brief."""
         raw = await self.collect(package)
         today = date.today().isoformat()
@@ -716,13 +716,13 @@ class IngestAgent:
             github_source=raw["github_source"],
         )
 
-        return self._generate(package, raw)
+        return self._generate(package, raw, user_id=user_id)
 
-    def run_from_raw(self, package: SourcePackage, raw: dict[str, Any]) -> str:
+    def run_from_raw(self, package: SourcePackage, raw: dict[str, Any], user_id: str = "default") -> str:
         """Generate brief from pre-collected raw data (skip collection)."""
-        return self._generate(package, raw)
+        return self._generate(package, raw, user_id=user_id)
 
-    def _generate(self, package: SourcePackage, raw: dict[str, Any]) -> str:
+    def _generate(self, package: SourcePackage, raw: dict[str, Any], user_id: str = "default") -> str:
         """Format raw data + call LLM to produce brief."""
         all_results = _denormalize(raw["searxng"], "searxng")
         github_repos = _denormalize(raw["github"], "github")
@@ -740,7 +740,7 @@ class IngestAgent:
 
         preference_section = ""
         if self.feedback_store:
-            pref = self.feedback_store.get_preference_text()
+            pref = self.feedback_store.get_preference_text(user_id)
             if pref:
                 preference_section = f"\n## 用户偏好\n\n{pref}"
 
