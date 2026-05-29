@@ -44,7 +44,10 @@ ingest:
     应用落地: 7
 
   # 早报时段标记
-  brief_schedule_time: "07:30"
+  brief_schedule_time: "07:00"
+
+  # 自动采集（MCP server 启动后按此时间每天采集原始数据，留空禁用）
+  collect_schedule: "06:55"
 
   # 原始数据存储
   raw_data_dir: ~/linglong/data/raw        # JSON 冷存储目录

@@ -29,7 +29,7 @@ ingest 早报覆盖 AI 领域 5 个维度：
 ## 设计原则
 
 1. **ingest 不写知识库** — 采集结果返回给调用方，写入由人决定
-2. **ingest 不做调度** — 由调用方（OpenClaw cron / CLI / MCP）触发
+2. **ingest 不做调度** — 容器内自调度（`collect_schedule`），用户按需触发生成
 3. **ingest 不做推送** — 采集后怎么展示是调用方的事
 4. **LLM Agent 驱动** — 预搜索后单次 LLM prompt 直接输出 markdown（v2.0+）
 
@@ -92,32 +92,36 @@ graph TD
 | 配置 | 默认值 | 说明 |
 |------|--------|------|
 | `mcp.redis_url` | `""` | Redis 连接地址（如 `redis://localhost:6379/0`） |
-| `brief_schedule_time` | `07:30` | 播报时段标记（如 `2026-05-25 07:30 → 2026-05-26 07:30`） |
+| `brief_schedule_time` | `07:00` | 播报时段标记（如 `2026-05-25 07:00 → 2026-05-26 07:00`） |
+| `collect_schedule` | `06:55` | 每天自动采集时间（HH:MM），留空禁用 |
 
-Redis 数据结构：`scout:brief:{date}`（TTL 25h）+ `scout:history:{date}`（TTL 16d）+ `scout:raw:{date}:{source}`（TTL 14d）。
+Redis 数据结构：`scout:brief:{date}:{user_id}`（TTL 25h，按用户隔离）+ `scout:history:{date}`（TTL 16d）+ `scout:raw:{date}:{source}`（TTL 14d）。
 
 ## 核心组件
 
 | 组件 | 路径 | 说明 |
 |------|------|------|
-| `IngestAgent` | `src/linglong/scout/agent.py` | LLM Agent：采集 → 存储 → 格式化 → LLM → markdown |
+| `IngestAgent` | `src/linglong/scout/agent.py` | LLM Agent：格式化 → LLM → markdown（采集逻辑在 collect.py） |
+| `Collect` | `src/linglong/scout/collect.py` | 三路并发数据采集（SearXNG / GitHub / RSS） |
+| `Scheduler` | `src/linglong/scout/scheduler.py` | 容器内自动采集调度（asyncio 后台任务） |
 | `RawStore` | `src/linglong/scout/raw_store.py` | 结构化原始数据存储（Redis 热 + JSON 文件冷） |
 | `BriefHistory` | `src/linglong/scout/brief_history.py` | 按维度跨天去重 + 重叠检测 + fallback 输出 |
 | `SourcePackage` | `src/linglong/scout/package.py` | 采集包定义模型（内联在 .scout.yml） |
-| `FeedbackStore` | `src/linglong/scout/feedback.py` | 用户偏好存储 + 权重计算 |
-| `SourceHealth` | `src/linglong/scout/agent.py` | 信源健康监控（成功率 + 连续失败告警） |
+| `FeedbackStore` | `src/linglong/scout/feedback.py` | 用户偏好存储 + 权重计算（按 user_id 隔离） |
+| `SourceHealth` | `src/linglong/scout/collect.py` | 信源健康监控（成功率 + 连续失败告警） |
 | `company_snapshot.json` | `~/linglong/` | 中美 14 家 AI 公司融资/估值快照（外部维护） |
 
 ## MCP 工具
 
 | 工具 | 说明 |
 |------|------|
-| `generate_brief()` | 生成 AI 早报：优先从 Redis 读 raw 数据，无则采集 → LLM 合成 |
+| `generate_brief()` | 生成 AI 早报（缓存按用户隔离）：优先从 Redis 读 raw 数据，无则采集 → LLM 合成 |
 | `fetch_raw(date, source)` | 获取结构化原始数据（Redis 优先 → fallback JSON 文件） |
-| `execute_package(path)` | 指定 YAML 文件路径执行采集包 |
+| `execute_package(topic, keywords)` | 自定义参数执行采集+生成，不依赖 YAML 文件 |
 | `fetch_rss(url)` | 采集单个 RSS feed，返回条目列表 |
+| `fetch_github_trending(daily, weekly, monthly)` | GitHub 趋势项目（三级 fallback） |
 | `search_web(query, max_results)` | SearXNG 搜索，返回结果列表 |
-| `record_feedback(hash, feedback)` | 记录用户偏好（positive/negative），影响后续权重 |
+| `record_feedback(hash, feedback)` | 记录用户偏好（按用户隔离），影响后续 generate_brief 权重 |
 
 参数、返回格式和请求示例 → [MCP 工具参考](design/07-mcp-tools.md)
 
@@ -249,7 +253,7 @@ docker compose up -d
 
 ### 已知注意事项
 
-- `generate_brief()` 内部用 `_run_async()` (ThreadPoolExecutor) 运行 async 函数，因为 MCP server 自身有事件循环，不能嵌套 `asyncio.run()`
+- 所有 MCP 工具函数均为 `async def`，FastMCP 原生支持异步，无需线程池包装
 - RSSHub `ACCESS_KEY` 仅追加到包含 `:1200` 端口的 URL
 - GitHub API 优先用 `gh auth token` 认证（5000 req/hr），未认证仅 60 req/hr
 - Docker 容器内无 `gh` CLI，GitHub API 调用将无认证（60 req/hr 限制）
@@ -272,9 +276,9 @@ linglong-scout serve
 
 # MCP — Agent 在对话中按需采集
 # fetch_raw(date, source) → 查看原始结构化数据
-# generate_brief() → 生成早报（有 raw 数据则跳过采集）
-# execute_package(path) → 查看结果 → 讨论 → 记录有价值内容
-# record_feedback(hash, feedback) → 记录偏好
+# generate_brief() → 生成早报（有 raw 数据则跳过采集，缓存按用户隔离）
+# execute_package(topic, keywords) → 自定义主题采集+生成
+# record_feedback(hash, feedback) → 记录偏好（按用户隔离，影响 generate_brief）
 ```
 
 ### 日志
@@ -330,4 +334,4 @@ ingest:
 - [缓存与调度](design/04-cache.md) — 日内缓存 + 时段标记
 - [Prompt 设计](design/05-prompt.md) — 模板结构 + 占位符 + 15 条规则
 - [MCP 接入](design/06-mcp.md) — 双模式部署 + Token 认证
-- [MCP 工具参考](design/07-mcp-tools.md) — 6 个工具的参数、返回格式和请求示例
+- [MCP 工具参考](design/07-mcp-tools.md) — 7 个工具的参数、返回格式和请求示例

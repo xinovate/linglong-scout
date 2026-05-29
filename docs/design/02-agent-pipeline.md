@@ -1,12 +1,12 @@
 # D-02 Agent 流水线
 
-> 状态：✅ 已实现 | 最后更新：2026-05-28 | 依赖：[D-01 数据源](01-data-sources.md)
+> 状态：✅ 已实现 | 最后更新：2026-05-29 | 依赖：[D-01 数据源](01-data-sources.md)
 
 ---
 
 ## 概述
 
-`IngestAgent` 将采集与加工解耦为两个阶段：`collect()` 采集并存储结构化原始数据，`_generate()` 从原始数据生成早报。
+`IngestAgent` 将采集与加工解耦：`collect.py` 负责三路并发数据采集，`agent.py` 负责格式化 + LLM 生成。MCP server 启动时自动运行 `scheduler.py` 后台任务，每天按 `collect_schedule` 时间采集原始数据。
 
 ---
 
@@ -14,9 +14,7 @@
 
 ```mermaid
 flowchart TD
-    START([IngestAgent.run]) --> COLLECT
-
-    subgraph COLLECT["collect() — 三路并发采集"]
+    START([IngestAgent.run]) --> COLLECT["collect.collect()<br/>三路并发采集"]
         direction TB
         PARALLEL["asyncio.gather"]
         S1["SearXNG<br/>关键词搜索<br/>Semaphore(5)"]
@@ -25,6 +23,14 @@ flowchart TD
     end
 
     COLLECT --> DEDUP
+
+    subgraph COLLECT_MODULE["collect.py — 三路并发"]
+        direction TB
+        PARALLEL["asyncio.gather"]
+        S1["SearXNG<br/>关键词搜索<br/>Semaphore(5)"]
+        S2["GitHub Trending<br/>日/周/月<br/>三级 fallback"]
+        S3["RSS 11 源<br/>Semaphore(3)"]
+    end
 
     subgraph DEDUP["URL 去重"]
         D1["SearXNG seen_urls 去重"]
@@ -80,7 +86,7 @@ sequenceDiagram
 
     Agent->>MCP: generate_brief()
 
-    MCP->>Redis: GET scout:brief:{today}
+    MCP->>Redis: GET scout:brief:{today}:{user_id}
     alt Brief 缓存命中
         Redis-->>MCP: markdown
         MCP-->>Agent: {cached: true, output: "..."}
@@ -91,7 +97,7 @@ sequenceDiagram
             MCP->>Redis: GET scout:raw:{today}:searxng/rss/github
             MCP->>AgentCore: agent.run_from_raw(package, raw)
         else Raw 数据不存在
-            MCP->>AgentCore: _run_async(agent.run(package))
+            MCP->>AgentCore: await agent.run(package)
 
             par 三路并发
                 AgentCore->>AgentCore: _search_all_keywords()
@@ -116,7 +122,7 @@ sequenceDiagram
         end
 
         AgentCore-->>MCP: markdown 早报
-        MCP->>Redis: SET scout:brief:{today} (TTL 25h)
+        MCP->>Redis: SET scout:brief:{today}:{user_id} (TTL 25h)
         MCP-->>Agent: {cached: false, output: "..."}
     end
 ```
@@ -140,11 +146,11 @@ sequenceDiagram
 ## 时段标记
 
 ```python
-schedule_time = config.ingest.brief_schedule_time  # "07:30"
+schedule_time = config.ingest.brief_schedule_time  # "07:00"
 time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} → {today} {schedule_time}"
 ```
 
-输出：`> 播报时段：2026-05-25 07:30 → 2026-05-26 07:30`
+输出：`> 播报时段：2026-05-25 07:00 → 2026-05-26 07:00`
 
 ---
 
@@ -163,7 +169,9 @@ time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} 
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong/scout/agent.py` | `IngestAgent.collect()` + `run()` + `run_from_raw()` + `_generate()` |
+| `src/linglong/scout/agent.py` | `IngestAgent.run()` + `run_from_raw()` + `_generate()` |
+| `src/linglong/scout/collect.py` | 三路并发采集：`collect()` + `SourceHealth` |
+| `src/linglong/scout/scheduler.py` | 容器内自动采集调度 |
 | `src/linglong/scout/raw_store.py` | 结构化原始数据存储（Redis 热 + JSON 冷） |
 | `src/linglong/scout/prompts/morning_brief.md` | 早报 prompt 模板 |
 | `src/linglong/config.py` | `IngestConfig` 配置模型 |

@@ -1,6 +1,6 @@
 # D-06 MCP 接入
 
-> 状态：✅ 已实现 | 最后更新：2026-05-28 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
+> 状态：✅ 已实现 | 最后更新：2026-05-29 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
 
 ---
 
@@ -22,7 +22,7 @@ flowchart TD
     TRANSPORT -->|stdio| STDIO["server.run(transport='stdio')<br/>子进程 stdio 管道"]
     TRANSPORT -->|streamable-http| HTTP_CHECK{auth_token?}
 
-    HTTP_CHECK -->|有| HTTP_AUTH["create_http_app()<br/>+ TokenAuthMiddleware<br/>+ uvicorn 监听"]
+    HTTP_CHECK -->|有| HTTP_AUTH["create_http_app()<br/>+ TokenAuthMiddleware<br/>+ 自动采集调度<br/>+ uvicorn 监听"]
     HTTP_CHECK -->|无| HTTP_NOAUTH["server.run(transport='streamable-http')<br/>无认证"]
 
     STDIO --> RUNNING(["服务运行中"])
@@ -58,13 +58,14 @@ sequenceDiagram
 
 ---
 
-## 工具列表（6 个）
+## 工具列表（7 个）
 
 | 工具 | 说明 |
 |------|------|
-| `generate_brief()` | 生成 AI 早报：优先从 Redis 读 raw 数据，无则采集 → LLM 合成 |
+| `generate_brief()` | 生成 AI 早报（缓存按用户隔离） |
 | `fetch_raw(date, source)` | 获取结构化原始数据（Redis → fallback 文件） |
-| `execute_package(path)` | 执行指定 YAML 采集包 |
+| `execute_package(topic, keywords)` | 自定义参数执行采集+生成 |
+| `fetch_github_trending(daily, weekly, monthly)` | GitHub 趋势项目（三级 fallback） |
 | `fetch_rss(url)` | 采集单个 RSS feed |
 | `search_web(query)` | SearXNG 搜索 |
 | `record_feedback(hash, feedback)` | 记录用户偏好 |
@@ -133,7 +134,7 @@ linglong-scout scout
 linglong-scout serve
 ```
 
-`brief` 命令的缓存逻辑：检查 Redis `scout:brief:{date}`，命中则直接输出，未命中则完整采集 + LLM 生成后写入 Redis（TTL 25h）。
+`brief` 命令的缓存逻辑：检查 Redis `scout:brief:{date}:{user_id}`，命中则直接输出，未命中则完整采集 + LLM 生成后写入 Redis（TTL 25h）。
 
 ---
 
@@ -149,7 +150,8 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 
 ## 已知注意事项
 
-- `generate_brief()` 内部用 `_run_async()` (ThreadPoolExecutor) 运行 async 函数，MCP server 有自己的事件循环
+- 所有 MCP 工具函数均为 `async def`，FastMCP 原生支持异步，无需线程池包装
+- `record_feedback()` 按 token 中的 user_id 隔离，仅影响对应用户的 `generate_brief()` 权重
 - RSSHub `ACCESS_KEY` 仅追加到 `:1200` 端口的 URL
 - GitHub API 优先用 `gh auth token` 认证（5000 req/hr）
 - MCP 子进程不继承 shell 环境变量，Claude Code 需通过 `env` 字段注入
@@ -160,15 +162,12 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong/mcp/server.py` | FastMCP 工厂 + 工具注册（6 个） |
-| `src/linglong/mcp/__main__.py` | 按 transport 启动，含日志初始化 |
+| `src/linglong/mcp/server.py` | FastMCP 工厂 + 工具注册（7 个） |
+| `src/linglong/mcp/__main__.py` | 按 transport 启动 + 自动采集调度 |
 | `src/linglong/mcp/_auth.py` | Token 认证中间件 |
-| `src/linglong/mcp/tools.py` | 6 个 MCP 工具实现 |
+| `src/linglong/mcp/tools.py` | 7 个 MCP 工具实现 |
 | `src/linglong/scout/raw_store.py` | 结构化原始数据存储（Redis 热 + JSON 冷） |
 | `src/linglong/cli.py` | CLI 入口：brief / collect / scout / serve |
 | `src/linglong/config.py` | 配置模型 + `setup_logging()` |
 | `Dockerfile` | Python 3.12-slim，pip install |
 | `docker-compose.yml` | network_mode: host，挂载配置和数据 |
-| `deploy/.scout.yml.example` | 服务器端配置模板 |
-| `deploy/.env.example` | 服务器端环境变量模板 |
-| `deploy/docker-deploy.sh` | 部署参考脚本 |

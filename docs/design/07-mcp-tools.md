@@ -10,10 +10,11 @@
 |------|------|
 | `search_web` | SearXNG 搜索 |
 | `fetch_rss` | 采集单个 RSS feed |
+| `fetch_github_trending` | GitHub 趋势项目（三级 fallback） |
 | `fetch_raw` | 获取结构化原始数据 |
-| `generate_brief` | 生成 AI 早报 |
-| `execute_package` | 执行指定 YAML 采集包 |
-| `record_feedback` | 记录用户偏好 |
+| `generate_brief` | 生成 AI 早报（缓存按用户隔离） |
+| `execute_package` | 自定义参数执行采集+生成 |
+| `record_feedback` | 记录用户偏好（按用户隔离，影响后续采集权重） |
 
 所有工具返回 JSON 字符串，错误响应格式统一为 `{"error": "描述信息"}`。
 
@@ -105,6 +106,54 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 
 ---
 
+## fetch_github_trending
+
+获取 GitHub 趋势项目（stars 增长排行），支持日/周/月三个周期。数据源三级 fallback：OpenGithubs → wangchujiang HTML → GitHub Search API。
+
+### 参数
+
+| 参数 | 类型 | 必选 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `daily` | int | 否 | 5 | 日增长排行数量 |
+| `weekly` | int | 否 | 3 | 周增长排行数量 |
+| `monthly` | int | 否 | 3 | 月增长排行数量 |
+
+### 请求示例
+
+```json
+{
+  "name": "fetch_github_trending",
+  "arguments": {
+    "daily": 5,
+    "weekly": 3,
+    "monthly": 3
+  }
+}
+```
+
+### 返回示例
+
+```json
+{
+  "results": [
+    {
+      "title": "ai-toolkit (+150⭐ 日增长)",
+      "url": "https://github.com/example/ai-toolkit",
+      "snippet": "AI toolkit for rapid prototyping",
+      "stars": "5000",
+      "growth": "150",
+      "period": "日增长"
+    }
+  ],
+  "count": 1,
+  "source": "opengithubs"
+}
+```
+
+`source` 取值：`opengithubs`（主）、`wangchujiang`（HTML fallback）、`search-api`（GitHub Search API fallback）。
+
+---
+
 ## fetch_raw
 
 获取指定日期的结构化原始采集数据（Redis 热 → JSON 文件冷 fallback）。
@@ -174,11 +223,20 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 
 ## generate_brief
 
-生成 AI 早报。优先使用 Redis 缓存，无缓存时采集 → LLM 合成。
+生成 AI 早报。优先使用 Redis 缓存（按 user_id 隔离），无缓存时复用 raw 数据或采集后 LLM 合成。
 
 ### 参数
 
 无。
+
+### 行为
+
+1. 检查 `scout:brief:{date}:{user_id}` 缓存，命中则直接返回
+2. 检查当天 raw 数据是否存在，存在则跳过采集直接用已有数据
+3. 否则执行完整采集 → 存储 raw → LLM 生成
+4. 生成结果写入用户专属缓存（TTL 25h）
+
+**注意**：缓存按 token 中的 user_id 隔离，不同用户看到各自的早报。
 
 ### 请求示例
 
@@ -217,13 +275,17 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 
 ## execute_package
 
-执行指定路径的 YAML 采集包。
+自定义参数执行采集 + LLM 生成，不依赖 YAML 文件。
 
 ### 参数
 
 | 参数 | 类型 | 必选 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `package_path` | string | 是 | — | YAML 采集包文件路径 |
+| `topic` | string | 是 | — | 早报主题，如 `"AI 早报"` |
+| `keywords` | string[] | 否 | `null` | SearXNG 搜索关键词，空则跳过搜索 |
+| `name` | string | 否 | `"custom-brief"` | 包名标识 |
+| `max_results` | int | 否 | 5 | 每个关键词返回结果上限 |
+| `max_age_days` | int | 否 | 3 | 搜索结果最大天数 |
 
 ### 请求示例
 
@@ -231,7 +293,9 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 {
   "name": "execute_package",
   "arguments": {
-    "package_path": "/opt/linglong-scout/custom-package.yml"
+    "topic": "AI 早报",
+    "keywords": ["OpenAI news", "Claude AI update"],
+    "max_results": 5
   }
 }
 ```
@@ -240,9 +304,9 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 
 ```json
 {
-  "package": "custom-topic",
+  "package": "custom-brief",
   "output_length": 2100,
-  "output": "# 自定义主题报告\n\n..."
+  "output": "# AI 早报\n\n..."
 }
 ```
 
@@ -250,7 +314,7 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 
 ## record_feedback
 
-记录用户对采集结果的偏好，影响后续权重。
+记录用户对采集结果的偏好。数据按 user_id 隔离，仅影响当前用户的后续采集权重。
 
 ### 参数
 
@@ -259,6 +323,12 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 | `content_hash` | string | 是 | — | 内容哈希标识 |
 | `feedback` | string | 是 | — | `"useful"` 或 `"not_interested"` |
 | `tags` | string[] | 否 | `null` | 关联标签 |
+
+### 影响范围
+
+- 偏好数据按 token 中的 user_id 隔离存储（SQLite user_id 列）
+- `generate_brief` 生成时注入当前用户的偏好文本到 LLM prompt，影响内容筛选和排序
+- 不影响其他用户的采集结果
 
 ### 请求示例
 
@@ -282,6 +352,18 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
   "feedback": "useful"
 }
 ```
+
+---
+
+## 自动调度
+
+MCP server 启动时自动拉起后台采集调度器（纯 asyncio），无需外部 cron。
+
+| 配置字段 | 默认值 | 说明 |
+|---------|--------|------|
+| `ingest.collect_schedule` | `"06:55"` | 每天采集时间（HH:MM），留空禁用 |
+
+调度流程：sleep 到目标时间 → `collect_data()` → `store_raw()` → Redis + JSON 文件 → 循环
 
 ---
 
