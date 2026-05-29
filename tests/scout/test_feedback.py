@@ -59,26 +59,26 @@ def test_mixed_feedback_on_same_tag(tmp_path):
 class TestMCPRecordFeedback:
     """Tests for MCP record_feedback tool function."""
 
-    def test_record_useful(self, tmp_path):
+    async def test_record_useful(self, tmp_path):
         from linglong.mcp.tools import record_feedback
 
         store = _make_store(tmp_path)
         with patch_store(store):
-            result = json.loads(record_feedback("hash_abc", "useful", ["funding"]))
+            result = json.loads(await record_feedback("hash_abc", "useful", ["funding"]))
         assert result["status"] == "recorded"
 
-    def test_record_invalid_feedback(self):
+    async def test_record_invalid_feedback(self):
         from linglong.mcp.tools import record_feedback
 
-        result = json.loads(record_feedback("hash_abc", "maybe"))
+        result = json.loads(await record_feedback("hash_abc", "maybe"))
         assert "error" in result
 
-    def test_record_not_interested(self, tmp_path):
+    async def test_record_not_interested(self, tmp_path):
         from linglong.mcp.tools import record_feedback
 
         store = _make_store(tmp_path)
         with patch_store(store):
-            result = json.loads(record_feedback("hash_xyz", "not_interested", ["policy"]))
+            result = json.loads(await record_feedback("hash_xyz", "not_interested", ["policy"]))
         assert result["status"] == "recorded"
 
 

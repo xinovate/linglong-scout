@@ -1,6 +1,5 @@
 """MCP tool implementations for Linglong Scout."""
 
-import asyncio
 import json
 import logging
 from typing import Any
@@ -11,21 +10,7 @@ from linglong.mcp._auth import get_current_user_id
 logger = logging.getLogger(__name__)
 
 
-def _run_async(coro: Any) -> Any:
-    """Run an async coroutine, handling both fresh and existing event loops."""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-    if loop and loop.is_running():
-        import concurrent.futures
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            return pool.submit(asyncio.run, coro).result()
-    return asyncio.run(coro)
-
-
-def fetch_rss(url: str, name: str | None = None, max_items: int = 20) -> str:
+async def fetch_rss(url: str, name: str | None = None, max_items: int = 20) -> str:
     """Fetch and parse an RSS feed. Returns entity previews for discussion.
 
     Use this to collect information from RSS sources. Discuss with the user
@@ -42,16 +27,14 @@ def fetch_rss(url: str, name: str | None = None, max_items: int = 20) -> str:
             sep = "&" if "?" in url else "?"
             url = f"{url}{sep}key={config.ingest.rsshub_access_key}"
 
-        async def _fetch():
-            async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-                resp = await client.get(
-                    url,
-                    headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
-                )
-                resp.raise_for_status()
-            return resp.text
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            resp = await client.get(
+                url,
+                headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+            )
+            resp.raise_for_status()
+            xml_text = resp.text
 
-        xml_text = _run_async(_fetch())
         feed = feedparser.parse(xml_text)
         items = []
         for entry in feed.entries[:max_items]:
@@ -73,7 +56,7 @@ def fetch_rss(url: str, name: str | None = None, max_items: int = 20) -> str:
         return json.dumps({"error": str(exc)}, ensure_ascii=False)
 
 
-def record_feedback(
+async def record_feedback(
     content_hash: str,
     feedback: str,
     tags: list[str] | None = None,
@@ -105,14 +88,12 @@ def record_feedback(
         return json.dumps({"error": str(exc)}, ensure_ascii=False)
 
 
-def execute_package(package_path: str) -> str:
+async def execute_package(package_path: str) -> str:
     """Execute an scout package via IngestAgent.
 
     Returns the morning brief output as markdown.
     """
     try:
-        from pathlib import Path
-
         from linglong.scout.agent import IngestAgent
         from linglong.scout.brief_history import BriefHistory
         from linglong.scout.feedback import FeedbackStore
@@ -125,7 +106,7 @@ def execute_package(package_path: str) -> str:
         brief_history = BriefHistory(dedup_windows=config.ingest.dedup_windows)
         agent = IngestAgent(feedback_store=feedback_store, brief_history=brief_history)
         user_id = get_current_user_id()
-        output = _run_async(agent.run(package, user_id=user_id))
+        output = await agent.run(package, user_id=user_id)
 
         response: dict[str, Any] = {
             "package": package.name,
@@ -139,7 +120,7 @@ def execute_package(package_path: str) -> str:
         return json.dumps({"error": str(exc)}, ensure_ascii=False)
 
 
-def generate_brief() -> str:
+async def generate_brief() -> str:
     """Generate morning brief from collected data.
 
     If raw data already exists in Redis for today, skips collection and
@@ -163,7 +144,6 @@ def generate_brief() -> str:
                 ensure_ascii=False,
             )
 
-        # Cache check: return today's brief if already generated
         today = date.today().isoformat()
         cached = get_brief(today)
         if cached:
@@ -191,7 +171,7 @@ def generate_brief() -> str:
             }
             output = agent.run_from_raw(package, raw, user_id=user_id)
         else:
-            output = _run_async(agent.run(package, user_id=user_id))
+            output = await agent.run(package, user_id=user_id)
 
         if output:
             set_brief(output, today)
@@ -209,7 +189,7 @@ def generate_brief() -> str:
         return json.dumps({"error": str(exc)}, ensure_ascii=False)
 
 
-def search_web(query: str, max_results: int = 10) -> str:
+async def search_web(query: str, max_results: int = 10) -> str:
     """Search the web via SearXNG. Returns results including web page title, web page URL, web page summary, website name, website icon, etc."""
     try:
         import httpx
@@ -227,13 +207,11 @@ def search_web(query: str, max_results: int = 10) -> str:
         if config.ingest.searxng_api_key:
             headers["Authorization"] = f"Bearer {config.ingest.searxng_api_key}"
 
-        async def _search():
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                resp = await client.get(f"{base_url}/search", params=params, headers=headers)
-                resp.raise_for_status()
-                return resp.json()
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.get(f"{base_url}/search", params=params, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
 
-        data = _run_async(_search())
         results = []
         for r in data.get("results", [])[:max_results]:
             results.append({
@@ -252,7 +230,7 @@ def search_web(query: str, max_results: int = 10) -> str:
         return json.dumps({"error": str(exc)}, ensure_ascii=False)
 
 
-def fetch_raw(target_date: str | None = None, source: str | None = None) -> str:
+async def fetch_raw(target_date: str | None = None, source: str | None = None) -> str:
     """Fetch structured raw data collected for a given date.
 
     Returns raw collected data (SearXNG search results, GitHub trending,
