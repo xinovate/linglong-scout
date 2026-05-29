@@ -1,6 +1,7 @@
 # D-06 MCP 接入
 
 > 状态：✅ 已实现 | 最后更新：2026-05-29 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
+> 属于 [D-00 设计总览](00-overview.md) 的接入层子设计。工具参数详见 [D-07 MCP 工具参考](07-mcp-tools.md)。
 
 ---
 

@@ -1,12 +1,13 @@
 # D-01 数据源架构
 
 > 状态：✅ 已实现 | 最后更新：2026-05-26
+> 属于 [D-00 设计总览](00-overview.md) 的数据层子设计。
 
 ---
 
 ## 概述
 
-ingest 的数据来自三路并发采集：SearXNG 搜索、GitHub Trending、RSS 订阅源。三路通过 `asyncio.gather` 并行拉取。
+Scout 的数据来自三路并发采集：SearXNG 搜索、GitHub Trending、RSS 订阅源。三路通过 `asyncio.gather` 并行拉取。
 
 ```
 IngestAgent.run()

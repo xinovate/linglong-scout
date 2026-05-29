@@ -1,12 +1,13 @@
 # D-03 去重机制
 
 > 状态：✅ 已实现 | 最后更新：2026-05-26 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
+> 属于 [D-00 设计总览](00-overview.md) 的质量层子设计。
 
 ---
 
 ## 概述
 
-ingest 的去重分两层：URL 级（代码去重）和语义级（LLM 通过 BriefHistory 判断）。
+Scout 的去重分两层：URL 级（代码去重）和语义级（LLM 通过 BriefHistory 判断）。
 
 ---
 
