@@ -3,6 +3,7 @@
 import json
 import logging
 from datetime import date, timedelta
+from typing import Any
 
 import redis
 
@@ -143,3 +144,74 @@ def get_last_history() -> str | None:
         return "\n\n".join(f"## {k}\n{v}" for k, v in data.items() if v)
     except Exception:
         return None
+
+
+_COMPANY_SNAPSHOT_KEY = "scout:company_snapshot"
+_META_FIELD = "__updated__"
+
+
+def get_company_snapshot() -> dict[str, Any]:
+    """Load company snapshot from Redis hash.
+
+    Returns {"updated": str, "companies": {name: {latest_funding, valuation, stock}}}.
+    Falls back to file if Redis unavailable.
+    """
+    try:
+        r = _get_redis()
+        data = r.hgetall(_COMPANY_SNAPSHOT_KEY)
+        if not data:
+            return _load_snapshot_file()
+        updated = data.pop(_META_FIELD, "unknown")
+        companies = {}
+        for name, raw in data.items():
+            try:
+                companies[name] = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                companies[name] = {"raw": raw}
+        return {"updated": updated, "companies": companies}
+    except Exception as e:
+        logger.warning("Redis snapshot load failed, falling back to file: %s", e)
+        return _load_snapshot_file()
+
+
+def set_company_snapshot(
+    companies: dict[str, dict[str, str]], updated: str | None = None,
+) -> None:
+    """Save company snapshot to Redis hash.
+
+    Args:
+        companies: {name: {"latest_funding": ..., "valuation": ..., "stock": ...}}
+        updated: ISO date string, defaults to today.
+    """
+    try:
+        r = _get_redis()
+        mapping: dict[str, str] = {
+            _META_FIELD: updated or date.today().isoformat(),
+        }
+        for name, info in companies.items():
+            mapping[name] = json.dumps(info, ensure_ascii=False)
+        r.delete(_COMPANY_SNAPSHOT_KEY)
+        r.hset(_COMPANY_SNAPSHOT_KEY, mapping=mapping)
+        logger.info("Company snapshot saved: %d companies", len(companies))
+    except Exception as e:
+        logger.warning("Redis snapshot save failed: %s", e)
+
+
+def _load_snapshot_file() -> dict[str, Any]:
+    """Fallback: load company snapshot from JSON file."""
+    from pathlib import Path
+
+    config = get_config()
+    path = Path(config.ingest.company_snapshot_path).expanduser()
+    if not path.exists():
+        return {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        # Migrate to Redis on first file read
+        if data.get("companies"):
+            set_company_snapshot(data["companies"], data.get("updated"))
+        return data
+    except Exception as e:
+        logger.warning("Failed to load snapshot file: %s", e)
+        return {}

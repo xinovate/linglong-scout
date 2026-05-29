@@ -13,7 +13,6 @@ from linglong.scout.agent import (
     _format_github,
     _format_results,
     _format_rss,
-    _load_company_snapshot,
 )
 from linglong.scout.collect import (
     SourceHealth,
@@ -382,7 +381,8 @@ class TestFetchRssFeeds:
 
 class TestCompanySnapshot:
     def test_load_snapshot(self):
-        snapshot = _load_company_snapshot()
+        from linglong.scout.cache import get_company_snapshot
+        snapshot = get_company_snapshot()
         assert "companies" in snapshot
         assert "OpenAI" in snapshot["companies"]
 

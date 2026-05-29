@@ -14,6 +14,7 @@ import httpx
 
 from linglong.config import get_config
 from linglong.scout.brief_history import BriefHistory, parse_sections
+from linglong.scout.cache import get_company_snapshot
 from linglong.scout.collect import collect as collect_data
 from linglong.scout.feedback import FeedbackStore
 from linglong.scout.package import SourcePackage
@@ -101,16 +102,6 @@ def _format_rss(items: list[dict[str, str]]) -> str:
             lines.append(f"   摘要: {item['snippet'][:200]}")
         lines.append("")
     return "\n".join(lines)
-
-
-def _load_company_snapshot() -> dict[str, Any]:
-    """Load company funding/valuation snapshot."""
-    config = get_config()
-    path = Path(config.ingest.company_snapshot_path).expanduser()
-    if not path.exists():
-        return {}
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
 
 
 def _format_company_snapshot(snapshot: dict[str, Any]) -> str:
@@ -245,7 +236,7 @@ class IngestAgent:
             if history_text:
                 history_section = f"\n{history_text}"
 
-        snapshot = _load_company_snapshot()
+        snapshot = get_company_snapshot()
         snapshot_text = _format_company_snapshot(snapshot)
 
         prompt_template = _load_prompt()
