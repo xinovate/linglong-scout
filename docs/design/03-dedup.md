@@ -88,7 +88,7 @@ sequenceDiagram
     BH-->>Agent: {history_section} 文本
 
     Agent->>Agent: 组装 prompt（注入 history_section）
-    Agent->>LLM: _call_llm(prompt)
+    Agent->>LLM: await _call_llm(system_prompt, topic, date)
     LLM-->>Agent: markdown 早报（含去重注释）
 
     Agent->>BH: save(today_output)

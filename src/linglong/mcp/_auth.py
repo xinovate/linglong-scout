@@ -38,11 +38,11 @@ def get_current_token() -> str:
 
 
 class TokenAuthMiddleware(BaseHTTPMiddleware):
-    """Validate Bearer token against Redis store.
+    """Validate Bearer token against Redis or static fallback.
 
-    Token format: ll-scout-{username}-{12-char-uuid}
+    Token format: ll-scout:{username}:{12-char-uuid}
     Redis key: same as token value, with value 'active'.
-    If Redis is not configured, falls back to static token comparison.
+    If Redis is not configured or unavailable, falls back to static token comparison.
     """
 
     def __init__(self, app, expected_token: str = "", redis_url: str = ""):

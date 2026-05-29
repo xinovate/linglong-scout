@@ -172,12 +172,16 @@ async def _call_llm(system_prompt: str, topic: str, date_str: str, max_tokens: i
             response.raise_for_status()
             data = response.json()
             return data["content"][0]["text"].strip()
-        except Exception as e:
+        except httpx.TimeoutException as e:
+            last_error = e
+            if attempt < retries:
+                logger.warning("LLM call attempt %d timed out, retrying...", attempt + 1)
+        except httpx.HTTPStatusError as e:
             last_error = e
             if attempt < retries:
                 logger.warning("LLM call attempt %d failed: %s, retrying...", attempt + 1, e)
-            else:
-                logger.error("LLM call failed after %d attempts: %s", retries + 1, e)
+        except Exception as e:
+            raise LLMError(str(e)) from e
     raise LLMError(str(last_error)) from last_error
 
 

@@ -427,7 +427,11 @@ def _validate_feed_url(url: str) -> None:
         host in ("localhost", "127.0.0.1", "0.0.0.0", "::1")
         or host.startswith("192.168.")
         or host.startswith("10.")
-        or host.startswith("172.16.")
+        or (
+            host.startswith("172.")
+            and host.count(".") >= 2
+            and 16 <= int(host.split(".")[1]) <= 31
+        )
         or host.endswith(".local")
         or host.endswith(".internal")
     ):

@@ -5,9 +5,7 @@ import logging
 from datetime import date, timedelta
 from typing import Any
 
-import redis
-
-from linglong.config import get_config
+from linglong.scout.redis_client import get_redis as _get_redis
 
 logger = logging.getLogger(__name__)
 
@@ -15,15 +13,6 @@ _BRIEF_PREFIX = "scout:brief:"
 _HISTORY_PREFIX = "scout:history:"
 _BRIEF_TTL = 25 * 3600  # 25 hours
 _HISTORY_RETAIN_DAYS = 16
-
-
-def _get_redis() -> redis.Redis:
-    """Get Redis client from config."""
-    config = get_config()
-    url = config.mcp.redis_url
-    if not url:
-        raise RuntimeError("redis_url not configured in .scout.yml (mcp.redis_url)")
-    return redis.from_url(url, decode_responses=True)
 
 
 def get_brief(target_date: str | None = None, user_id: str = "default") -> str | None:
