@@ -36,7 +36,6 @@ ingest:
     min_stars: 500
 
   # 早报去重（按维度回看天数）
-  company_snapshot_path: ~/linglong/company_snapshot.json
   dedup_windows:
     关键人物: 14
     公司动态: 7

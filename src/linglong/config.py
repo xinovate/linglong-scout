@@ -80,10 +80,6 @@ class IngestConfig(BaseSettings):
         description="GitHub Search API fallback parameters",
     )
 
-    company_snapshot_path: str = Field(
-        default="~/linglong/company_snapshot.json",
-        description="Company funding/valuation snapshot for brief generation",
-    )
     dedup_windows: dict[str, int] = Field(
         default_factory=lambda: {"关键人物": 14, "公司动态": 7, "政策动态": 14, "应用落地": 7},
         description="Per-dimension lookback days for dedup",

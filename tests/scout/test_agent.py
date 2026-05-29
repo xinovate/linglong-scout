@@ -382,9 +382,18 @@ class TestFetchRssFeeds:
 class TestCompanySnapshot:
     def test_load_snapshot(self):
         from linglong.scout.cache import get_company_snapshot
-        snapshot = get_company_snapshot()
+        mock_redis_data = {
+            "__updated__": "2026-05-25",
+            "OpenAI": '{"latest_funding":"$100亿","valuation":"$3000亿","stock":null}',
+        }
+        with patch("linglong.scout.cache._get_redis") as mock_r:
+            mock_redis = MagicMock()
+            mock_redis.hgetall.return_value = mock_redis_data
+            mock_r.return_value = mock_redis
+            snapshot = get_company_snapshot()
         assert "companies" in snapshot
         assert "OpenAI" in snapshot["companies"]
+        assert snapshot["updated"] == "2026-05-25"
 
     def test_format_snapshot(self):
         snapshot = {

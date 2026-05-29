@@ -154,13 +154,12 @@ def get_company_snapshot() -> dict[str, Any]:
     """Load company snapshot from Redis hash.
 
     Returns {"updated": str, "companies": {name: {latest_funding, valuation, stock}}}.
-    Falls back to file if Redis unavailable.
     """
     try:
         r = _get_redis()
         data = r.hgetall(_COMPANY_SNAPSHOT_KEY)
         if not data:
-            return _load_snapshot_file()
+            return {}
         updated = data.pop(_META_FIELD, "unknown")
         companies = {}
         for name, raw in data.items():
@@ -170,8 +169,8 @@ def get_company_snapshot() -> dict[str, Any]:
                 companies[name] = {"raw": raw}
         return {"updated": updated, "companies": companies}
     except Exception as e:
-        logger.warning("Redis snapshot load failed, falling back to file: %s", e)
-        return _load_snapshot_file()
+        logger.warning("Redis snapshot load failed: %s", e)
+        return {}
 
 
 def set_company_snapshot(
@@ -195,23 +194,3 @@ def set_company_snapshot(
         logger.info("Company snapshot saved: %d companies", len(companies))
     except Exception as e:
         logger.warning("Redis snapshot save failed: %s", e)
-
-
-def _load_snapshot_file() -> dict[str, Any]:
-    """Fallback: load company snapshot from JSON file."""
-    from pathlib import Path
-
-    config = get_config()
-    path = Path(config.ingest.company_snapshot_path).expanduser()
-    if not path.exists():
-        return {}
-    try:
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-        # Migrate to Redis on first file read
-        if data.get("companies"):
-            set_company_snapshot(data["companies"], data.get("updated"))
-        return data
-    except Exception as e:
-        logger.warning("Failed to load snapshot file: %s", e)
-        return {}
