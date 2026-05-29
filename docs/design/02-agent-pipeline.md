@@ -15,14 +15,6 @@
 ```mermaid
 flowchart TD
     START([IngestAgent.run]) --> COLLECT["collect.collect()<br/>三路并发采集"]
-        direction TB
-        PARALLEL["asyncio.gather"]
-        S1["SearXNG<br/>关键词搜索<br/>Semaphore(5)"]
-        S2["GitHub Trending<br/>日/周/月<br/>三级 fallback"]
-        S3["RSS 11 源<br/>Semaphore(3)"]
-    end
-
-    COLLECT --> DEDUP
 
     subgraph COLLECT_MODULE["collect.py — 三路并发"]
         direction TB
@@ -31,6 +23,8 @@ flowchart TD
         S2["GitHub Trending<br/>日/周/月<br/>三级 fallback"]
         S3["RSS 11 源<br/>Semaphore(3)"]
     end
+
+    COLLECT --> DEDUP
 
     subgraph DEDUP["URL 去重"]
         D1["SearXNG seen_urls 去重"]
