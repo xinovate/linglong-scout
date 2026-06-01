@@ -14,6 +14,7 @@ services:
     network_mode: host
     environment:
       - TZ=Asia/Shanghai
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
     env_file: .env
     volumes:
       - ./.scout.yml:/app/.scout.yml:ro

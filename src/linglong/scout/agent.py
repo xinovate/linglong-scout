@@ -64,13 +64,19 @@ _SOURCE_LABELS = {
     "search-api": "GitHub Search API（近 30 天新建高星项目）",
 }
 
+_FALLBACK_NOTE = {
+    "wangchujiang": "（注意：此来源仅提供日增长数据，无周增长和月增长）",
+    "search-api": "（注意：此来源为搜索 API 回退，无增长分类）",
+}
+
 
 def _format_github(repos: list[dict[str, str]], source: str) -> str:
     """Format GitHub repos as structured text for LLM."""
     if not repos:
         return ""
     source_label = _SOURCE_LABELS.get(source, source)
-    lines = [f"以下开源数据来自 {source_label}：", ""]
+    note = _FALLBACK_NOTE.get(source, "")
+    lines = [f"以下开源数据来自 {source_label}{note}：", ""]
 
     periods: dict[str, list[dict[str, str]]] = {}
     for r in repos:

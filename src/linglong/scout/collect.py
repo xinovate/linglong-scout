@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 import re
 from datetime import date, timedelta
 from typing import Any
@@ -77,20 +78,22 @@ def _is_rsshub_url(url: str) -> bool:
 
 
 async def _github_headers() -> dict[str, str]:
-    """Return GitHub API headers with token from gh CLI if available."""
+    """Return GitHub API headers with token from env or gh CLI."""
     headers = {"Accept": "application/vnd.github.v3+json"}
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            "gh", "auth", "token",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=5)
-        token = stdout.decode().strip()
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-    except Exception:
-        pass
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not token:
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "gh", "auth", "token",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=5)
+            token = stdout.decode().strip()
+        except Exception:
+            pass
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     return headers
 
 
@@ -267,6 +270,24 @@ async def _fetch_opengithubs(
     return [], ""
 
 
+def _extract_detail_descriptions(md: str) -> dict[str, str]:
+    """Extract per-repo descriptions from <h3> detail sections."""
+    descs: dict[str, str] = {}
+    sections = re.split(r"<h3[^>]*>", md)
+    for section in sections:
+        url_match = re.search(
+            r"https://github\.com/([a-zA-Z0-9_.\-]+/[a-zA-Z0-9_.\-]+)", section,
+        )
+        if not url_match:
+            continue
+        full_name = url_match.group(1)
+        desc_match = re.search(r"项目描述[：:]\s*(.+)", section)
+        desc = desc_match.group(1).strip() if desc_match else ""
+        if desc:
+            descs[full_name] = desc
+    return descs
+
+
 def _parse_opengithub_table(
     md: str,
     growth_label: str,
@@ -279,19 +300,14 @@ def _parse_opengithub_table(
         r'\|\s*\d+\s*\|\s*\[([^\]]+)\]\(([^)]+)\)\s*\|\s*([\d.k]+)\s*\|\s*🔺?(\d[\d,]*)\s*\|',
         md,
     )
+    descriptions = _extract_detail_descriptions(md)
 
     for full_name, url, total_stars, growth in rows:
         if full_name in seen:
             continue
         seen.add(full_name)
 
-        escaped = re.escape(full_name)
-        desc_match = re.search(
-            rf"{escaped}.*?项目描述[：:]\s*(.+?)(?:\n|$)",
-            md,
-            re.DOTALL,
-        )
-        desc = desc_match.group(1).strip() if desc_match else ""
+        desc = descriptions.get(full_name, "")
 
         raw_growth = growth.replace(",", "")
         raw_stars = total_stars

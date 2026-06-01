@@ -1,39 +1,38 @@
 # D-01 数据源架构
 
-> 状态：✅ 已实现 | 最后更新：2026-05-26
+> 状态：✅ 已实现 | 最后更新：2026-06-01
 > 属于 [D-00 设计总览](00-overview.md) 的数据层子设计。
 
 ---
 
 ## 概述
 
-Scout 的数据来自三路并发采集：SearXNG 搜索、GitHub Trending、RSS 订阅源。三路通过 `asyncio.gather` 并行拉取。
+Scout 采用 **RSS 为主力、SearXNG 为精准补充** 的采集策略。三路通过 `asyncio.gather` 并行拉取。
 
 ```
 IngestAgent.run()
-  ├── _search_all_keywords()    SearXNG 56 次查询 Semaphore(5) 并发
-  ├── _github_trending()         GitHub Trending 日/周/月三级 fallback
-  └── _fetch_rss_feeds()         RSS 11 源 Semaphore(3) 并发
+  ├── _fetch_rss_feeds()         RSS 11 源（主力，人工编辑筛选） Semaphore(3) 并发
+  ├── _search_all_keywords()     SearXNG 17 次精准查询（补充） Semaphore(5) 并发
+  └── _github_trending()         GitHub Trending 日/周/月三级 fallback
 ```
 
 ---
 
-## SearXNG 搜索
+## SearXNG 搜索（精准补充）
 
 **后端**：自建 SearXNG 实例
 
-**关键词分组**（56 个，分 6 组）：
+**策略**：只保留实体级精准查询（具体人名/公司名/产品名），宽泛主题查询由 RSS 覆盖。
 
-| 组 | 维度覆盖 | 关键词数 | max_results |
-|---|---------|---------|-------------|
-| 1 | 关键人物 | 18 | 3 |
-| 2 | 公司动态 | 12 | 5 |
-| 3 | 融资估值 | 5 | 3 |
-| 4 | 政策动态 | 16 | 5 |
-| 5 | 开源趋势 | 2 | 5 |
-| 6 | 应用落地 | 5 | 3 |
+**关键词分组**（17 个，分 3 组）：
 
-**并发策略**：`asyncio.Semaphore(5)`，56 次查询并发执行，~8s 完成（vs 串行 ~45s）。
+| 组 | 定位 | 关键词数 | max_results |
+|---|------|---------|-------------|
+| 1 | 关键人物 | 8 | 2 |
+| 2 | 公司/产品 | 6 | 2 |
+| 3 | 应用/技术 | 3 | 2 |
+
+**并发策略**：`asyncio.Semaphore(5)`，17 次查询并发执行。
 
 **认证**：Bearer Token（`searxng_api_key`），通过 nginx 反代注入。
 
@@ -51,7 +50,7 @@ IngestAgent.run()
 
 ---
 
-## RSS 订阅源（11 源）
+## RSS 订阅源（11 源，信息主力）
 
 | 源 | 类型 | 条目/次 | 维度覆盖 |
 |---|------|---------|---------|
@@ -77,10 +76,10 @@ IngestAgent.run()
 
 | 阶段 | 串行 | 并发 |
 |------|------|------|
-| SearXNG 56 次查询 | ~45s | ~8s |
+| SearXNG 17 次查询 | ~15s | ~3s |
 | GitHub | ~2s | ~2s（与 SearXNG 并行） |
 | RSS 11 源 | ~10s | ~3s（并行） |
-| **数据采集总耗时** | **~57s** | **~7.6s** |
+| **数据采集总耗时** | **~27s** | **~3s** |
 
 ---
 

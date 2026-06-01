@@ -39,7 +39,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | GD-01 | LLM 调用模式 | 单次 Agent prompt | v1.x 流水线 JSON 解析频繁失败 | 多次 LLM 调用流水线 |
 | GD-02 | 搜索后端 | 自建 SearXNG | 完全控制搜索结果和隐私 | Google API / Bing API |
 | GD-03 | GitHub Trending | 三级 fallback | 单源不可靠 | 单一数据源 |
-| GD-04 | 并发策略 | asyncio.gather + Semaphore | 数据采集 57s → 7.6s | 串行拉取 |
+| GD-04 | 并发策略 | asyncio.gather + Semaphore | 数据采集并发 ~3s | 串行拉取 |
 | GD-05 | 缓存机制 | Redis 日内缓存 + 文件冷存储 | 0.2ms vs 83s，避免重复 LLM 调用 | 无缓存 / 纯文件缓存 |
 | GD-06 | 去重方式 | URL 级 + BriefHistory 语义级 | 双层去重，LLM 判断重复 | 纯 URL 去重 |
 | GD-07 | MCP 部署 | 双模式：stdio + streamable-http | 本地开发 + 远程部署 | 仅 stdio |
@@ -83,6 +83,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | v2.8 | 冷热分离 | 结构化原始数据存储（Redis 热 + JSON 冷）+ fetch_raw 工具 + 采集与加工解耦 |
 | v2.9 | 多用户 + 自调度 | 用户偏好/缓存按 token 隔离 + 容器内 asyncio 自动采集调度 + collect/agent 拆分 |
 | v2.10 | 内部质量优化 | LLM async + Anthropic system 参数 + domain exceptions + 优雅退出 + pip-compile + tools 去重 |
+| v2.11 | RSS-first 采集策略 | SearXNG 关键词从 63 精简到 17（仅实体级精准查询），RSS 为主力 + OpenGithubs 描述修复 + GITHUB_TOKEN 环境变量 |
 
 ---
 
@@ -91,7 +92,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | 方案 | 放弃原因 | 替代方案 |
 |------|----------|----------|
 | 多次 LLM 调用流水线 | JSON 解析频繁失败 | 单次 Agent prompt |
-| 串行数据拉取 | 56 次查询串行 ~57s | asyncio.gather 并发 7.6s |
+| 串行数据拉取 | 63 次宽泛查询 ~57s | RSS-first：RSS 主力 + 17 次精准 SearXNG 并发 ~3s |
 | company_snapshot 内嵌代码包 | 不灵活，改了要重新部署 | Redis hash 存储 |
 | MCP 仅 stdio 模式 | 无法远程部署 | 双模式 stdio + streamable-http |
 
