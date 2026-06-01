@@ -7,6 +7,7 @@
 
 | 日期 | 主题 | 关键结论 |
 |------|------|----------|
+| 2026-06-01 | v2.11 RSS-first 采集策略 + OpenGithubs 修复 | SearXNG 63→20 关键词（仅实体级精准查询）；RSS 11→14 源（+VentureBeat/SyncedReview/EU AI Act）；OpenGithubs 描述解析 bug 修复（re.DOTALL 跨段匹配）；GITHUB_TOKEN 环境变量支持（Docker 无 gh CLI）；总数据 493→~210 条，信噪比大幅提升 |
 | 2026-05-29 | 27 项：功能 + 重构 + 安全 + 质量优化 | v2.10；LLM async + prompt 修正；tools 去重；FeedbackStore 单例；scheduler 优雅退出；domain exceptions；hatch-vcs 版本；SSRF 防护(172.16/12)；auth 18 测试；CI 质量门禁；_get_redis 去重；regex bug 修复；schedule 依赖清理；healthcheck TCP；retry 范围缩窄 |
 | 2026-05-28 | 项目独立化：命名统一 + Docker + 配置重构 + 文档同步 | 10 commits；ingest→scout 全面重命名；.scout.yml；Docker 镜像 309MB；doc-check hook |
 | 2026-05-26 | v2.4–v2.6 Agent 接入 + 并发优化 + 缓存 + MCP 远程部署 | Claude Code MCP 连通；数据采集 57s→7.6s；日内缓存；HTTP+Token 认证 |
