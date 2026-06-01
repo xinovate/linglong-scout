@@ -11,6 +11,17 @@
 | 架构决策变更 | 架构文档 + 路线图 ADR |
 | 安全/运维相关 | 运维文档 |
 
+## 工作日志规则
+
+当天有 commit 时，**必须**产出以下两个文件（缺一不可）：
+
+| 产出物 | 路径 | 内容要求 |
+|--------|------|---------|
+| 摘要行 | `journal/README.md` 表格新增一行 | 日期 + 主题 + 关键结论（一句话） |
+| 详情文件 | `journal/YYYY-MM-DD.md` | 任务索引表 + 每个任务的"问题→方案→结论"段落 |
+
+`journal-check.py` hook 在 `git push` 时自动检查这两项，标记 `[REQUIRED]` 的缺失项必须在推送前补齐。
+
 ## 提交前文档检查清单
 
 代码变更涉及以下模块时，**必须逐个检查**对应文档，确认内容、流程图、架构图同步：
@@ -23,6 +34,7 @@
 | 缓存/存储/Redis | `docs/README.md` 缓存机制 + `docs/design/04-cache.md` |
 | 配置字段 | `docs/README.md` 配置段 + `.scout.example.yml` + `docs/design/00-overview.md` 外部配置表 |
 | CLI 命令 | `docs/README.md` 调用方式 + `docs/design/06-mcp.md` CLI 命令段 |
+| 当天有 commit | `journal/YYYY-MM-DD.md` 详情文件 + `journal/README.md` 摘要行 |
 
 检查要点：
 1. **组件表** — 新增/删除的模块是否在 `docs/README.md` 和 `00-overview.md` 的组件表中同步

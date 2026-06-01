@@ -35,19 +35,23 @@ def main():
     claude_hook = "--claude-hook" in sys.argv
     today = date.today().isoformat()
     today_file = PROJECT / "journal" / f"{today}.md"
+    readme_file = PROJECT / "journal" / "README.md"
     commits = get_today_commits()
 
     if not commits:
         sys.exit(0)
 
     msg_parts = []
+
+    # Check 1: detail file must exist
     if not today_file.exists():
         msg_parts.append(
-            f"journal-check: No journal entry for {today}. "
-            f"You have {len(commits)} commit(s) today. "
-            f"Consider creating journal/{today}.md before pushing."
+            f"journal-check [REQUIRED]: journal/{today}.md does not exist. "
+            f"Create it with task index and detail sections before pushing. "
+            f"({len(commits)} commit(s) today)"
         )
     else:
+        # Check 2: task count vs commit count
         content = today_file.read_text()
         task_count = content.count("### ")
         if task_count < len(commits):
@@ -55,8 +59,18 @@ def main():
                 f"journal-check: Today's journal has {task_count} task(s) "
                 f"but {len(commits)} commit(s) today. Consider updating."
             )
-        else:
-            sys.exit(0)
+
+    # Check 3: README index must have today's entry
+    if readme_file.exists():
+        readme = readme_file.read_text()
+        if today not in readme:
+            msg_parts.append(
+                f"journal-check [REQUIRED]: journal/README.md has no entry for {today}. "
+                f"Add a summary row to the index table."
+            )
+
+    if not msg_parts:
+        sys.exit(0)
 
     msg = "\n".join(msg_parts)
 
@@ -69,8 +83,10 @@ def main():
         }, sys.stdout)
     else:
         YELLOW = "\033[33m"
+        RED = "\033[31m"
         RESET = "\033[0m"
-        print(f"{YELLOW}{msg}{RESET}")
+        color = RED if "[REQUIRED]" in msg else YELLOW
+        print(f"{color}{msg}{RESET}")
 
     sys.exit(0)
 
