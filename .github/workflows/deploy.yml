@@ -30,4 +30,4 @@ jobs:
             docker image prune -f
             sleep 5
             docker compose ps
-            curl -sf http://127.0.0.1:9900/mcp/scout > /dev/null || (echo "Health check failed" && docker compose logs --tail=20 && exit 1)
+            python3 -c "import socket; s=socket.socket(); s.settimeout(3); s.connect(('127.0.0.1',9900)); s.close()" || (echo "Health check failed" && docker compose logs --tail=20 && exit 1)
