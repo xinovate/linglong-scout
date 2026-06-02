@@ -351,6 +351,9 @@ async def _fetch_trending_html(max_results: int) -> list[dict[str, str]]:
             desc_match = re.search(r'<div class="details">\s*(.*?)\s*</div>', block, re.DOTALL)
             desc = re.sub(r'<[^>]+>', '', desc_match.group(1)).strip() if desc_match else ''
 
+            total_match = re.search(r'(\d[\d,]*)\s*stars total', block)
+            total_stars = total_match.group(1).replace(',', '') if total_match else '0'
+
             stars_match = re.search(r'([\d,]+)\s*stars today', block)
             today_stars = stars_match.group(1).replace(',', '') if stars_match else None
 
@@ -359,7 +362,7 @@ async def _fetch_trending_html(max_results: int) -> list[dict[str, str]]:
                     "title": f"{full_name} (+{today_stars}⭐ 日增长)",
                     "url": f"https://github.com/{full_name}",
                     "snippet": re.sub(r'&[#\w]+;', '', desc)[:200],
-                    "stars": today_stars,
+                    "stars": total_stars,
                     "growth": today_stars,
                     "period": "日增长",
                 })
