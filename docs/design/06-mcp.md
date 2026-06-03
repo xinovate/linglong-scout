@@ -93,30 +93,23 @@ graph LR
 
 ### Docker 部署
 
-服务器端用 Docker 容器替换 systemd + venv，`network_mode: host` 共享主机网络。
+所有服务（scout + redis + rsshub + searxng）运行在统一的 `docker-compose.yml` 中，通过 Docker 内部网络 `scout-net` 互联。
 
 ```mermaid
 graph LR
-    subgraph Docker容器
-        SCOUT["linglong-scout<br/>MCP Server :9900"]
-    end
-
-    subgraph 主机服务
-        SEARXNG["SearXNG :8088"]
-        RSSHUB["RSSHub :1200"]
-        REDIS["Redis :6379"]
-    end
-
-    CF["Cloudflare Tunnel"] -->|127.0.0.1:9900| SCOUT
-    SCOUT -->|host 网络| SEARXNG
-    SCOUT -->|host 网络| RSSHUB
-    SCOUT -->|host 网络| REDIS
+    User --> CF[Cloudflare Tunnel]
+    CF --> Scout[linglong-scout :9900]
+    Scout -->|scout-net| Redis[linglong-redis :6379]
+    Scout -->|scout-net| RSSHub[linglong-rsshub :1200]
+    Scout -->|scout-net| SearXNG[linglong-searxng :8080]
 ```
 
-配置文件：
-- `.scout.yml` — 服务器端配置（参考 `.scout.example.yml`），敏感值用 `${ENV_VAR}` 引用
-- `.env` — 环境变量，包含 API Key、Token、Redis URL
-- `docker-compose.yml` — `network_mode: host`，挂载 `.scout.yml` 和 `data/` 目录
+- 4 个服务在同一个 `docker-compose.yml` 中，Docker 内部网络 `scout-net` 互联
+- Scout 通过 Docker 服务名访问其他服务（`http://searxng:8080`、`http://rsshub:1200`、`redis://redis:6379/0`）
+- 仅 scout 暴露 `127.0.0.1:9900` 到主机，其余服务仅容器内可达
+- 无需 nginx 反向代理 — SearXNG 认证由网络隔离保证
+- 配置文件：`.scout.yml`、`.env`、`config/searxng/settings.yml`
+- 数据卷：`./data`（日志 + 原始数据 + Redis 持久化）、`./config/searxng/settings.yml`（SearXNG 配置）
 
 ---
 
@@ -176,4 +169,4 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 | `src/linglong/cli.py` | CLI 入口：brief / collect / scout / serve |
 | `src/linglong/config.py` | 配置模型 + `setup_logging()` |
 | `Dockerfile` | Python 3.12-slim，pip install |
-| `docker-compose.yml` | network_mode: host，挂载配置和数据 |
+| `docker-compose.yml` | All-in-One Docker Compose（scout + redis + rsshub + searxng），内部网络 scout-net |

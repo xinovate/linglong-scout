@@ -1,6 +1,6 @@
 # Scout 设计总览
 
-> 创建日期：2026-05-25 | 最后更新：2026-06-03 | 状态：已实现（v2.12）
+> 创建日期：2026-05-25 | 最后更新：2026-06-03 | 状态：已实现（v2.13）
 > 先读 [Scout README](../README.md) 了解项目定位和快速上手，本文件是设计层深入文档。
 
 ---
@@ -86,6 +86,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | v2.10 | 内部质量优化 | LLM async + Anthropic system 参数 + domain exceptions + 优雅退出 + pip-compile + tools 去重 |
 | v2.11 | RSS-first 采集策略 | SearXNG 关键词从 63 精简到 17（仅实体级精准查询），RSS 为主力 + OpenGithubs 描述修复 + GITHUB_TOKEN 环境变量 |
 | v2.12 | 早报 prompt 紧凑格式 + pre-generate brief + githooks 管理 | prompt 段落标题嵌入格式标签；scheduler 采集后预生成早报避免 MCP 超时；doc-check pre-push 阻塞模式；.githooks 统一 hook 管理 |
+| v2.13 | All-in-One Docker Compose + RSSHub 配置独立化 | Redis/RSSHub/SearXNG 合并到统一 docker-compose；Docker 内部网络替代 nginx 反代；rsshub_url + route 字段替代 :1200 硬编码 |
 
 ---
 

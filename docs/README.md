@@ -26,6 +26,36 @@ Scout 早报覆盖 AI 领域 5 个维度：
 
 详细的维度定义、信源实测、实现路线 → [设计总览](design/00-overview.md)
 
+## 快速开始
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/xinovate/linglong-scout.git
+cd linglong-scout
+
+# 2. 配置
+cp .scout.example.yml .scout.yml      # 编辑填入实际值
+cp .env.example .env                   # 填入 API Key 和密码
+
+# 3. SearXNG 配置（可选，自定义搜索引擎）
+mkdir -p config/searxng
+# 将 SearXNG settings.yml 放入 config/searxng/settings.yml
+
+# 4. 启动全部服务
+docker compose up -d
+
+# 5. 查看日志
+docker compose logs -f scout
+```
+
+服务端口：
+| 服务 | 容器名 | 内部端口 | 主机暴露 |
+|------|--------|---------|---------|
+| Scout MCP | linglong-scout | 9900 | 127.0.0.1:9900 |
+| Redis | linglong-redis | 6379 | 不暴露 |
+| RSSHub | linglong-rsshub | 1200 | 不暴露 |
+| SearXNG | linglong-searxng | 8080 | 不暴露 |
+
 ## 设计原则
 
 1. **Scout 不写知识库** — 采集结果返回给调用方，写入由人决定
@@ -121,7 +151,9 @@ graph TD
 }
 ```
 
-OpenClaw 配置、Docker 部署、认证流程 → [MCP 接入](design/06-mcp.md)
+**Docker 部署：** 所有服务（scout + redis + rsshub + searxng）通过一个 `docker compose up -d` 启动，Docker 内部网络 `scout-net` 互联。仅 scout 暴露 `127.0.0.1:9900` 到主机，其余服务仅容器内可达。配置文件：`.scout.yml`、`.env`、`config/searxng/settings.yml`。
+
+OpenClaw 配置、认证流程、部署架构详情 → [MCP 接入](design/06-mcp.md)
 
 ## CLI 命令
 
