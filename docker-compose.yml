@@ -48,7 +48,7 @@ services:
 
   rsshub:
     image: docker.1ms.run/diygod/rsshub:latest
-    container_name: rsshub
+    container_name: linglong-rsshub
     restart: unless-stopped
     environment:
       - ACCESS_KEY=${RSSHUB_ACCESS_KEY}
@@ -59,7 +59,7 @@ services:
 
   searxng:
     image: searxng/searxng:latest
-    container_name: searxng
+    container_name: linglong-searxng
     restart: unless-stopped
     volumes:
       - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
