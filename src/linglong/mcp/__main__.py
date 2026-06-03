@@ -29,8 +29,16 @@ def main() -> None:
 
 
 def _run_http(config) -> None:
-    """Run HTTP server with optional auth and background scheduler."""
+    """Run HTTP server with mandatory auth and background scheduler."""
     import anyio
+
+    if not config.mcp.auth_token:
+        logger.error(
+            "auth_token is required for HTTP mode. "
+            "Run 'linglong-scout init' to generate one, "
+            "or set LL_MCP_AUTH_TOKEN in .env"
+        )
+        raise SystemExit(1)
 
     async def _serve():
         import asyncio
@@ -39,18 +47,17 @@ def _run_http(config) -> None:
 
         app = create_http_app()
 
-        if config.mcp.auth_token or config.mcp.redis_url:
-            from linglong.mcp._auth import TokenAuthMiddleware
+        from linglong.mcp._auth import TokenAuthMiddleware
 
-            app.add_middleware(
-                TokenAuthMiddleware,
-                expected_token=config.mcp.auth_token or "",
-                redis_url=config.mcp.redis_url,
-            )
-            if config.mcp.redis_url:
-                logger.info("Token auth enabled (Redis)")
-            else:
-                logger.info("Token auth enabled (static)")
+        app.add_middleware(
+            TokenAuthMiddleware,
+            expected_token=config.mcp.auth_token,
+            redis_url=config.mcp.redis_url or "",
+        )
+        if config.mcp.redis_url:
+            logger.info("Token auth enabled (Redis + static fallback)")
+        else:
+            logger.info("Token auth enabled (static only)")
 
         if config.ingest.collect_schedule:
             from linglong.scout.scheduler import collect_scheduler

@@ -1,8 +1,10 @@
 """Linglong Scout CLI."""
 
 import argparse
+import getpass
 import logging
 import sys
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +128,35 @@ def cmd_serve(args) -> None:
     mcp_main()
 
 
+def cmd_init(args) -> None:
+    """Generate auth token and write to .env file."""
+    from linglong.mcp.token import generate_token
+
+    username = getpass.getuser()
+    token = generate_token(username)
+
+    env_path = Path(".env")
+    key = "LL_MCP_AUTH_TOKEN"
+
+    lines: list[str] = []
+    found = False
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            if line.startswith(f"{key}="):
+                lines.append(f"{key}={token}")
+                found = True
+            else:
+                lines.append(line)
+
+    if not found:
+        lines.append(f"{key}={token}")
+
+    env_path.write_text("\n".join(lines) + "\n")
+    print(f"Token generated and saved to .env:")
+    print(f"  {key}={token}")
+    print(f"Username: {username}")
+
+
 def main() -> None:
     """CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -147,6 +178,9 @@ def main() -> None:
 
     p_serve = sub.add_parser("serve", help="Run MCP server")
     p_serve.set_defaults(func=cmd_serve)
+
+    p_init = sub.add_parser("init", help="Generate auth token and save to .env")
+    p_init.set_defaults(func=cmd_init)
 
     args = parser.parse_args()
 

@@ -49,6 +49,7 @@ docker compose logs -f scout
 ```
 
 服务端口：
+
 | 服务 | 容器名 | 内部端口 | 主机暴露 |
 |------|--------|---------|---------|
 | Scout MCP | linglong-scout | 9900 | 127.0.0.1:9900 |
@@ -70,9 +71,9 @@ v2.0 起早报生成从"代码流水线"重构为"LLM Agent 单 prompt"模式：
 ```mermaid
 graph TD
     subgraph 数据采集
-        A1[SearXNG<br/>关键词搜索] --> D[聚合去重]
+        A1[SearXNG<br/>17 组精准关键词] --> D[聚合去重]
         A2[OpenGithubs<br/>GitHub Trending<br/>日/周/月三段] --> D
-        A3[RSS 订阅源<br/>7 个公开源 + 5 个 RSSHub 源] --> D
+        A3[RSS 订阅源<br/>9 个公开源 + 5 个 RSSHub 源] --> D
     end
 
     D --> R[RawStore<br/>结构化存储]

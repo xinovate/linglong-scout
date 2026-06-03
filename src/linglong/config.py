@@ -189,6 +189,9 @@ def _interpolate_env(data: Any) -> Any:
 
 def _load_yaml_to_config(yaml_path: Path) -> ScoutConfig:
     """Construct ScoutConfig from a YAML file."""
+    from dotenv import load_dotenv
+
+    load_dotenv(override=False)
     data = yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
     data = _interpolate_env(data)
     return ScoutConfig(**data)
