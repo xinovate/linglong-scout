@@ -220,3 +220,7 @@ pip install -e ".[dev]"            # 安装（含开发依赖）
 ## License
 
 MIT
+
+## 交流
+
+<img src="docs/assets/wechat-qr.jpg" alt="微信群二维码" width="200">
