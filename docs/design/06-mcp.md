@@ -60,7 +60,7 @@ sequenceDiagram
 
 ---
 
-## 工具列表（7 个）
+## 工具列表（6 个）
 
 | 工具 | 说明 |
 |------|------|
@@ -69,7 +69,6 @@ sequenceDiagram
 | `execute_package(topic, keywords)` | 自定义参数执行采集+生成 |
 | `fetch_github_trending(daily, weekly, monthly)` | GitHub 趋势项目（三级 fallback） |
 | `fetch_rss(url, name?, max_items?)` | 采集单个 RSS feed |
-| `search_web(query, max_results)` | SearXNG 搜索 |
 | `record_feedback(content_hash, feedback, tags)` | 记录用户偏好 |
 
 ---
@@ -160,11 +159,11 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong/mcp/server.py` | FastMCP 工厂 + 工具注册（7 个） |
+| `src/linglong/mcp/server.py` | FastMCP 工厂 + 工具注册（6 个） |
 | `src/linglong/mcp/__main__.py` | 按 transport 启动 + 自动采集调度 |
 | `src/linglong/mcp/token.py` | Token 生成与解析工具 |
 | `src/linglong/mcp/_auth.py` | TokenAuthMiddleware |
-| `src/linglong/mcp/tools.py` | 7 个 MCP 工具实现 |
+| `src/linglong/mcp/tools.py` | 6 个 MCP 工具实现 |
 | `src/linglong/scout/raw_store.py` | 结构化原始数据存储（Redis 热 + JSON 冷） |
 | `src/linglong/cli.py` | CLI 入口：brief / collect / scout / serve |
 | `src/linglong/config.py` | 配置模型 + `setup_logging()` |

@@ -107,7 +107,7 @@ Docker 内部网络 `scout-net` 互联，仅 Scout 暴露 `127.0.0.1:9900` 到�
 
 ## 特性
 
-- **7 个 MCP 工具** — 搜索、RSS、趋势、早报生成、用户偏好
+- **6 个 MCP 工具** — RSS、趋势、早报生成、用户偏好
 - **三路并发采集** — SearXNG / GitHub / RSS 并行（~8s vs 串行 ~57s）
 - **双层去重** — URL 级 + BriefHistory 跨天语义去重
 - **按用户隔离** — 缓存、偏好、早报按 user_id 分区
@@ -121,7 +121,6 @@ Docker 内部网络 `scout-net` 互联，仅 Scout 暴露 `127.0.0.1:9900` 到�
 | 工具 | 说明 |
 |------|------|
 | `generate_brief` | 生成 AI 早报（按用户缓存，预生成 fallback） |
-| `search_web` | SearXNG 搜索 |
 | `fetch_rss` | 采集 RSS/Atom feed |
 | `fetch_github_trending` | GitHub 趋势项目（三级 fallback） |
 | `fetch_raw` | 获取结构化原始采集数据（Redis → JSON fallback） |

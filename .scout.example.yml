@@ -34,9 +34,9 @@ ingest:
   # GitHub API token (optional, for higher rate limits).
   # Set via environment variable: export GITHUB_TOKEN=ghp_xxxx
   github_trending_limits:
-    daily: 5
-    weekly: 3
-    monthly: 3
+    daily: 4
+    weekly: 2
+    monthly: 2
   github_search_fallback:
     since_days: 30
     min_stars: 500
@@ -130,6 +130,14 @@ ingest:
             - "EU AI Act enforcement 2026"
             - "AI copyright lawsuit 2026"
             - "AI chip export control 2026"
+          max_results: 2
+        # ── 超级个体/一人公司（AI 赋能个体创业趋势） ──
+        - keywords:
+            - "solo founder AI company launch 2026"
+            - "one person company OPC AI 2026"
+            - "indie hacker AI product launch 2026"
+            - "一人公司 OPC AI 2026"
+            - "超级个体 AI 创业 2026"
           max_results: 2
 
 # ── MCP Server ────────────────────────────────

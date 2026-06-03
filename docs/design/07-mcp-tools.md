@@ -9,7 +9,6 @@
 
 | 工具 | 说明 |
 |------|------|
-| `search_web` | SearXNG 搜索 |
 | `fetch_rss` | 采集单个 RSS feed |
 | `fetch_github_trending` | GitHub 趋势项目（三级 fallback） |
 | `fetch_raw` | 获取结构化原始数据 |
@@ -18,47 +17,6 @@
 | `record_feedback` | 记录用户偏好（按用户隔离，影响后续采集权重） |
 
 所有工具返回 JSON 字符串，错误响应格式统一为 `{"error": "描述信息"}`。
-
----
-
-## search_web
-
-通过 SearXNG 搜索网页，返回标题、URL、摘要。
-
-### 参数
-
-| 参数 | 类型 | 必选 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `query` | string | 是 | — | 搜索关键词 |
-| `max_results` | int | 否 | 10 | 返回结果数量上限 |
-
-### 请求示例
-
-```json
-{
-  "name": "search_web",
-  "arguments": {
-    "query": "OpenAI GPT-5 2026",
-    "max_results": 3
-  }
-}
-```
-
-### 返回示例
-
-```json
-{
-  "results": [
-    {
-      "title": "OpenAI announces GPT-5 with multimodal reasoning",
-      "url": "https://example.com/openai-gpt5",
-      "snippet": "OpenAI has unveiled GPT-5, featuring advanced multimodal reasoning...",
-      "engine": "google"
-    }
-  ],
-  "count": 1
-}
-```
 
 ---
 
@@ -379,7 +337,6 @@ MCP server 启动时自动拉起后台采集调度器（纯 asyncio），无需�
 
 | 场景 | 错误信息 |
 |------|---------|
-| SearXNG 不可达 | `search_web failed: ...` |
 | RSS feed 解析失败 | `fetch_rss failed: ...` |
 | 无 raw 数据 | 返回 `warning` 字段，非 error |
 | feedback 值非法 | `feedback must be 'useful' or 'not_interested'` |

@@ -18,11 +18,11 @@ Scout 早报覆盖 AI 领域 5 个维度：
 
 | 维度 | 典型内容 | 数据源 |
 |------|---------|--------|
-| 关键人物 | 观点/言论/人事变动 | SearXNG + RSS |
-| 公司动态 | 产品发布、融资、股价 | SearXNG + RSS |
+| 关键人物 | 观点/言论/人事变动/个体成就 | SearXNG + RSS |
+| 行业要闻 | 公司战略、重大产品发布、超级个体/OPC | SearXNG + RSS |
 | 政策动态 | AI 监管、产业政策 | SearXNG + RSS |
 | 开源趋势 | AI 新项目 Stars 增长 | OpenGithubs（日/周/月三段） |
-| 应用落地 | 模型/Agent/机器人产品 | SearXNG + RSS |
+| 融资动态 | 融资事件、IPO、估值变动 | SearXNG + RSS |
 
 详细的维度定义、信源实测、实现路线 → [设计总览](design/00-overview.md)
 
@@ -116,7 +116,6 @@ graph TD
 | `execute_package(topic, keywords)` | 自定义参数执行采集+生成 |
 | `fetch_rss(url, name, max_items)` | 采集单个 RSS feed |
 | `fetch_github_trending(daily, weekly, monthly)` | GitHub 趋势项目（三级 fallback） |
-| `search_web(query, max_results)` | SearXNG 搜索 |
 | `record_feedback(content_hash, feedback, tags)` | 记录用户偏好（按用户隔离，影响后续 generate_brief 权重） |
 
 参数、返回格式和请求示例 → [MCP 工具参考](design/07-mcp-tools.md)
@@ -204,4 +203,4 @@ mcp:
 | [缓存与调度](design/04-cache.md) | 日内缓存 + 时段标记 + 自动调度 |
 | [Prompt 设计](design/05-prompt.md) | 模板结构 + 占位符 + 规则 |
 | [MCP 接入](design/06-mcp.md) | 双模式部署 + Token 认证 + Docker |
-| [MCP 工具参考](design/07-mcp-tools.md) | 7 个工具的参数、返回格式和请求示例 |
+| [MCP 工具参考](design/07-mcp-tools.md) | 6 个工具的参数、返回格式和请求示例 |

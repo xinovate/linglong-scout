@@ -15,12 +15,11 @@ from linglong.mcp.tools import (
     generate_brief,
     init_stores,
     record_feedback,
-    search_web,
 )
 
 logger = logging.getLogger(__name__)
 
-_INGEST_TOOLS = [fetch_raw, fetch_rss, fetch_github_trending, generate_brief, execute_package, search_web, record_feedback]
+_INGEST_TOOLS = [fetch_raw, fetch_rss, fetch_github_trending, generate_brief, execute_package, record_feedback]
 
 
 def create_server() -> FastMCP:

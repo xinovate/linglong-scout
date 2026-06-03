@@ -41,7 +41,7 @@ def test_tool_count_correct():
     """Tool count should match server registration."""
     count = len(_INGEST_TOOLS)
     names = [t.__name__ for t in _INGEST_TOOLS]
-    assert count == 7, f"Expected 7 tools, got {count}: {names}"
+    assert count == 6, f"Expected 6 tools, got {count}: {names}"
 
 
 def test_all_tools_in_docs():
