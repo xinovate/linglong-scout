@@ -88,6 +88,9 @@ def main():
         color = RED if "[REQUIRED]" in msg else YELLOW
         print(f"{color}{msg}{RESET}")
 
+    if "[REQUIRED]" in msg:
+        sys.exit(1)
+
     sys.exit(0)
 
 
