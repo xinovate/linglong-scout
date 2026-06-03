@@ -1,5 +1,5 @@
-# Linglong Scout — Docker Compose
-# 用于替换 systemd 部署，SearXNG/RSSHub/Redis 等服务已在主机运行
+# Linglong Scout — All-in-One Docker Compose
+# Scout + Redis + RSSHub + SearXNG
 #
 # 使用：
 #   docker compose up -d
@@ -11,7 +11,8 @@ services:
     image: linglong-scout:latest
     container_name: linglong-scout
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - "127.0.0.1:9900:9900"
     environment:
       - TZ=Asia/Shanghai
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
@@ -19,8 +20,54 @@ services:
     volumes:
       - ./.scout.yml:/app/.scout.yml:ro
       - ./data:/root/linglong
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:9900/mcp/scout', timeout=3)"]
       interval: 30s
       timeout: 5s
       retries: 3
+    networks:
+      - scout-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: linglong-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - scout-net
+
+  rsshub:
+    image: docker.1ms.run/diygod/rsshub:latest
+    container_name: rsshub
+    restart: unless-stopped
+    environment:
+      - ACCESS_KEY=${RSSHUB_ACCESS_KEY}
+      - NODE_ENV=production
+      - TZ=Asia/Shanghai
+    networks:
+      - scout-net
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+    volumes:
+      - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - scout-net
+
+networks:
+  scout-net:
+    driver: bridge
