@@ -16,7 +16,7 @@ _HISTORY_RETAIN_DAYS = 16
 
 
 def get_brief(target_date: str | None = None, user_id: str = "default") -> str | None:
-    """Get cached brief for a date + user. Returns markdown or None."""
+    """Get cached brief for a date + user. Falls back to default if user-specific missing."""
     d = target_date or date.today().isoformat()
     key = f"{_BRIEF_PREFIX}{d}:{user_id}"
     try:
@@ -24,9 +24,20 @@ def get_brief(target_date: str | None = None, user_id: str = "default") -> str |
         data = r.get(key)
         if data:
             logger.info("Brief cache hit for %s/%s", d, user_id)
-        return data
+            return data
+        # Fallback to default cache for pre-generated briefs
+        if user_id != "default":
+            default_key = f"{_BRIEF_PREFIX}{d}:default"
+            data = r.get(default_key)
+            if data:
+                logger.info("Brief cache hit for %s/default (fallback from %s)", d, user_id)
+                return data
+            logger.warning("Brief cache miss for %s/%s and default", d, user_id)
+        else:
+            logger.warning("Brief cache miss for %s/default", d)
+        return None
     except Exception as e:
-        logger.warning("Redis brief get failed: %s", e)
+        logger.error("Redis brief get failed for %s/%s: %s", d, user_id, e)
         return None
 
 
@@ -39,7 +50,7 @@ def set_brief(content: str, target_date: str | None = None, user_id: str = "defa
         r.setex(key, _BRIEF_TTL, content)
         logger.info("Brief cached for %s/%s (%d chars)", d, user_id, len(content))
     except Exception as e:
-        logger.warning("Redis brief set failed: %s", e)
+        logger.error("Redis brief set failed for %s/%s: %s", d, user_id, e)
 
 
 def load_history(

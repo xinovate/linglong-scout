@@ -124,7 +124,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | `SourcePackage` | `src/linglong/scout/package.py` | 采集包定义模型 |
 | `FeedbackStore` | `src/linglong/scout/feedback.py` | 用户偏好存储（按 user_id 隔离）+ 权重计算 |
 | `ScoutError` | `src/linglong/scout/exceptions.py` | Domain 异常层级（`ScoutError` / `LLMError` / `SourceError`） |
-| `cache` | `src/linglong/scout/cache.py` | Brief 缓存与历史管理（get_brief/set_brief、load_history/save_history） |
+| `cache` | `src/linglong/scout/cache.py` | Brief 缓存（按 user_id 隔离，未命中回退 default）与历史管理 |
 | `redis_client` | `src/linglong/scout/redis_client.py` | 共享 Redis 客户端工厂（get_redis） |
 | `morning_brief.md` | `src/linglong/scout/prompts/morning_brief.md` | 早报 prompt 模板 |
 
