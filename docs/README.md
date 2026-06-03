@@ -37,9 +37,8 @@ cd linglong-scout
 cp .scout.example.yml .scout.yml      # 编辑填入实际值
 cp .env.example .env                   # 填入 API Key 和密码
 
-# 3. SearXNG 配置（可选，自定义搜索引擎）
-mkdir -p config/searxng
-# 将 SearXNG settings.yml 放入 config/searxng/settings.yml
+# 3. SearXNG 配置（可选，默认已包含开发用 settings.yml）
+# 编辑 config/searxng/settings.yml 自定义搜索引擎
 
 # 4. 启动全部服务
 docker compose up -d
@@ -84,7 +83,7 @@ graph TD
     E --> F[5 维度 Markdown 早报]
 
     subgraph 去重与历史
-        G[BriefHistory<br/>按维度跨天去重<br/>关键人物/政策 14d<br/>公司/应用 7d] -->|近期已播报| E
+        G[BriefHistory<br/>按维度跨天去重<br/>关键人物/政策 14d<br/>行业要闻 7d] -->|近期已播报| E
         E -->|保存当天输出| G
     end
 ```

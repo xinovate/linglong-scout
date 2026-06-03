@@ -17,6 +17,7 @@ dependencies = [
     "starlette",
     "uvicorn",
     "redis>=5.0",
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

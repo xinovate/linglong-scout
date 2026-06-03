@@ -215,7 +215,7 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
   "package": "ai-morning-brief",
   "output_length": 4200,
   "cached": false,
-  "output": "# AI 早报 2026-05-28\n\n## 关键人物\n...\n## 公司动态\n..."
+  "output": "# AI 早报 2026-05-28\n\n## 关键人物\n...\n## 行业要闻\n..."
 }
 ```
 

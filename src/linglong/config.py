@@ -85,7 +85,7 @@ class IngestConfig(BaseSettings):
     )
 
     dedup_windows: dict[str, int] = Field(
-        default_factory=lambda: {"关键人物": 14, "公司动态": 7, "政策动态": 14, "应用落地": 7},
+        default_factory=lambda: {"关键人物": 14, "行业要闻": 7, "融资动态": 7, "政策动态": 14},
         description="Per-dimension lookback days for dedup",
     )
 
@@ -144,6 +144,7 @@ class ScoutConfig(BaseSettings):
         env_prefix="LL_SCOUT_",
         env_file=".env",
         env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     debug: bool = Field(default=False, description="Debug mode")

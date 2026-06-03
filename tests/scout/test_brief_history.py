@@ -16,7 +16,7 @@ _SAMPLE_OUTPUT = """# AI 早报 · 2026-05-25
 |-----------|--------|------|
 | LLM is a dead end | Yann LeCun | 公开唱反调 |
 
-## 🏢 公司动态
+## 🏢 行业要闻
 
 | 事件 | 公司 | 最新融资 | 股价/估值变动 | 解读 |
 |------|------|----------|--------------|------|
@@ -34,11 +34,11 @@ _SAMPLE_OUTPUT = """# AI 早报 · 2026-05-25
 |--------|------|-------|------|------|
 | foo/bar | 日增长 #1 | 21k | test | [GitHub](https://github.com/foo/bar) |
 
-## 🚀 应用落地
+## 💰 融资动态
 
-| 产品/功能 | 公司 | 解读 |
-|-----------|------|------|
-| AI填表 | OpenAI | 实用场景落地 |
+| 公司 | 融资 | 估值 |
+|------|------|------|
+| xAI | $100亿 | $500亿 |
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -53,9 +53,9 @@ class TestParseSections:
     def test_extracts_all_dimensions(self):
         sections = parse_sections(_SAMPLE_OUTPUT)
         assert "关键人物" in sections
-        assert "公司动态" in sections
+        assert "行业要闻" in sections
         assert "政策动态" in sections
-        assert "应用落地" in sections
+        assert "融资动态" in sections
 
     def test_excludes_open_source(self):
         sections = parse_sections(_SAMPLE_OUTPUT)
@@ -124,33 +124,33 @@ class TestBriefHistory:
         _, store = mock_r
         history = BriefHistory()
         today = date.today().isoformat()
-        sections = {"公司动态": "| 发布 GPT-5.5 | OpenAI | ... |"}
+        sections = {"行业要闻": "| 发布 GPT-5.5 | OpenAI | ... |"}
         history.save(today, sections)
 
         key = f"scout:history:{today}"
         assert key in store
-        assert store[key]["公司动态"] == "| 发布 GPT-5.5 | OpenAI | ... |"
+        assert store[key]["行业要闻"] == "| 发布 GPT-5.5 | OpenAI | ... |"
 
     def test_load_past_days(self, mock_r):
         _, store = mock_r
         history = BriefHistory()
         yesterday = (date.today() - timedelta(days=1)).isoformat()
-        sections = {"公司动态": "| 发布 GPT-5.5 | OpenAI | ... |"}
+        sections = {"行业要闻": "| 发布 GPT-5.5 | OpenAI | ... |"}
         history.save(yesterday, sections)
 
         loaded = history.load()
-        assert "公司动态" in loaded
-        assert yesterday in loaded["公司动态"]
+        assert "行业要闻" in loaded
+        assert yesterday in loaded["行业要闻"]
 
     def test_load_respects_windows(self, mock_r):
         _, store = mock_r
         history = BriefHistory()
         old_date = (date.today() - timedelta(days=10)).isoformat()
-        sections = {"公司动态": "| old news |"}
+        sections = {"行业要闻": "| old news |"}
         history.save(old_date, sections)
 
         loaded = history.load()
-        assert "公司动态" not in loaded
+        assert "行业要闻" not in loaded
 
     def test_load_policy_14_day_window(self, mock_r):
         _, store = mock_r
@@ -170,12 +170,12 @@ class TestBriefHistory:
         _, store = mock_r
         history = BriefHistory()
         yesterday = (date.today() - timedelta(days=1)).isoformat()
-        sections = {"公司动态": "| some event |"}
+        sections = {"行业要闻": "| some event |"}
         history.save(yesterday, sections)
 
         text = history.format_for_prompt()
         assert "近期已播报" in text
-        assert "公司动态" in text
+        assert "行业要闻" in text
 
     def test_no_history_returns_empty(self, mock_r):
         history = BriefHistory()

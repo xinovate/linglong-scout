@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 _DEDUP_WINDOWS: dict[str, int] = {
     "关键人物": 14,
-    "公司动态": 7,
+    "行业要闻": 7,
+    "融资动态": 7,
     "政策动态": 14,
-    "应用落地": 7,
 }
 
 

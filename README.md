@@ -37,8 +37,14 @@ graph LR
 - **Karpathy** 发布了新教程 ...
 - **Sam Altman** 宣布 ...
 
-## 公司动态
-- **OpenAI** 发布 GPT-5 ...
+## 行业要闻
+| 公司/产品 | 动态 |
+|-----------|------|
+| OpenAI | 发布 GPT-5 ... |
+| Tesla | 工厂部署人形机器人 ... |
+
+## 融资动态
+- **xAI** 完成 $100 亿融资 ...
 
 ## 政策动态
 - EU AI Act 执法指南 ...
@@ -47,9 +53,6 @@ graph LR
 | 项目 | Stars 增长 | 简介 |
 |------|-----------|------|
 | ai-toolkit | +1.2k/周 | ... |
-
-## 应用落地
-- **Tesla** 在工厂部署人形机器人 ...
 ```
 
 ---
@@ -89,19 +92,15 @@ cd linglong-scout
 cp .scout.example.yml .scout.yml      # 编辑填入实际值
 cp .env.example .env                   # 填入 API Key 和密码
 
-# SearXNG 配置（可选）
-mkdir -p config/searxng
-# 将 settings.yml 放入 config/searxng/settings.yml
-
-# 生成认证 token（HTTP 模式必需）
-linglong-scout init
+# SearXNG 配置（可选，默认已包含开发用 settings.yml）
+# 编辑 config/searxng/settings.yml 自定义搜索引擎
 
 # 启动
 docker compose up -d
 docker compose logs -f scout
 ```
 
-Docker 内部网络 `scout-net` 互联，仅 Scout 暴露 `127.0.0.1:9900` 到主机，Redis/RSSHub/SearXNG 仅容器内可达。
+Docker 内部网络 `scout-net` 互联，仅 Scout 暴露 `127.0.0.1:9900` 到主机，Redis/RSSHub/SearXNG 仅容器内可达。首次 `docker compose up` 前需编辑 `.env` 填入 `REDIS_PASSWORD`，`.scout.yml` 填入 LLM API Key。
 
 ---
 
@@ -213,7 +212,7 @@ pip install -e ".[dev]"            # 安装（含开发依赖）
 |------|------|
 | [模块说明 + MCP 接入](docs/README.md) | 架构、组件、部署详解 |
 | [设计总览](docs/design/00-overview.md) | 全局决策、组件表、架构演进 |
-| [MCP 工具参考](docs/design/07-mcp-tools.md) | 7 个工具的参数和示例 |
+| [MCP 工具参考](docs/design/07-mcp-tools.md) | 6 个工具的参数和示例 |
 | [工作日志](journal/README.md) | 按天记录开发过程 |
 
 ## License

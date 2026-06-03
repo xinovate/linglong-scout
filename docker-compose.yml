@@ -65,6 +65,7 @@ services:
       - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
     environment:
       - TZ=Asia/Shanghai
+      - SEARXNG_BASE_URL=http://searxng:8080/
     networks:
       - scout-net
 

@@ -117,7 +117,7 @@ def _format_company_snapshot(snapshot: dict[str, Any]) -> str:
         return ""
     updated = snapshot.get("updated", "unknown")
     lines = [
-        f"以下是中美 AI 头部公司融资快照（更新于 {updated}），用于填充公司动态表格的融资列和股价/估值变动列：",
+        f"以下是中美 AI 头部公司融资快照（更新于 {updated}），用于填充行业要闻表格的融资列和股价/估值变动列：",
         "",
         "| 公司 | 融资 | 估值 | 股票代码 |",
         "|------|------|------|----------|",
