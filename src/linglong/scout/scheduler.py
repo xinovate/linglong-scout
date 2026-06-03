@@ -47,7 +47,9 @@ async def _interruptible_sleep(seconds: float) -> None:
 
 
 async def _run_collect() -> None:
-    """Execute one collection cycle."""
+    """Execute one collection cycle: collect raw data, then pre-generate brief."""
+    from linglong.scout.agent import IngestAgent
+    from linglong.scout.cache import set_brief
     from linglong.scout.collect import collect as collect_data
     from linglong.scout.raw_store import store_raw
 
@@ -72,6 +74,17 @@ async def _run_collect() -> None:
         logger.info("Scheduled collection done: %d items for %s (%s)", total, today, counts)
     except Exception:
         logger.exception("Scheduled collection failed for %s", today)
+        return
+
+    # Pre-generate brief so the first MCP call returns cached result instantly
+    try:
+        agent = IngestAgent()
+        output = await agent.run_from_raw(package, raw)
+        if output:
+            set_brief(output, today)
+            logger.info("Pre-generated brief for %s (%d chars)", today, len(output))
+    except Exception:
+        logger.exception("Pre-generate brief failed for %s", today)
 
 
 async def collect_scheduler() -> None:
