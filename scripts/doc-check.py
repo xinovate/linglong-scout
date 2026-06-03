@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Doc sync checker for pre-commit and Claude Code hooks.
+"""Doc sync checker for pre-commit, pre-push and Claude Code hooks.
 
-Checks staged files against docs/doc-map.yaml mappings. If code is
+Checks changed files against docs/doc-map.yaml mappings. If code is
 changed without corresponding doc updates, outputs a warning.
 
-Exit code is always 0 — never blocks a commit.
+Modes:
+  default (staged):  checks git diff --staged, advisory (exit 0)
+  --pre-push:        checks commits ahead of origin/main, blocking (exit 1)
 
 Usage:
-  python scripts/doc-check.py              # plain text (git hook)
-  python scripts/doc-check.py --claude-hook # JSON (Claude hook)
+  python scripts/doc-check.py                # staged files, advisory
+  python scripts/doc-check.py --pre-push     # push range, blocking
+  python scripts/doc-check.py --claude-hook   # JSON (Claude hook)
 """
 
 import json
@@ -27,6 +30,20 @@ def get_staged_files() -> list[str]:
     if result.returncode != 0:
         return []
     return [f.strip() for f in result.stdout.strip().split("\n") if f.strip()]
+
+
+def get_push_files() -> list[str]:
+    """Get files changed in commits ahead of origin/main."""
+    # Try upstream branch first, fallback to origin/main
+    for ref in ["@{u}", "origin/main"]:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", f"{ref}...HEAD"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return [f.strip() for f in result.stdout.strip().split("\n") if f.strip()]
+    return []
 
 
 def parse_yaml_mappings(text: str) -> list[dict]:
@@ -103,14 +120,20 @@ def check(staged: list[str], mappings: list[dict]) -> list[str]:
 
 def main():
     claude_hook = "--claude-hook" in sys.argv
+    pre_push = "--pre-push" in sys.argv
+    blocking = pre_push
 
-    staged = get_staged_files()
-    if not staged:
+    if pre_push:
+        changed = get_push_files()
+    else:
+        changed = get_staged_files()
+
+    if not changed:
         sys.exit(0)
 
     code_extensions = {".py", ".ts", ".js", ".go", ".rs"}
     has_code = any(
-        Path(f).suffix in code_extensions for f in staged
+        Path(f).suffix in code_extensions for f in changed
     )
     if not has_code:
         sys.exit(0)
@@ -119,7 +142,7 @@ def main():
     if not mappings:
         sys.exit(0)
 
-    warnings = check(staged, mappings)
+    warnings = check(changed, mappings)
     if not warnings:
         sys.exit(0)
 
@@ -131,6 +154,12 @@ def main():
                 "additionalContext": msg,
             }
         }, sys.stdout)
+    elif blocking:
+        RED = "\033[31m"
+        RESET = "\033[0m"
+        print(f"{RED}doc-check [REQUIRED]: code changed without doc updates — push BLOCKED{RESET}")
+        for w in warnings:
+            print(f"{RED}{w}{RESET}")
     else:
         YELLOW = "\033[33m"
         RESET = "\033[0m"
@@ -138,7 +167,7 @@ def main():
         for w in warnings:
             print(f"{YELLOW}{w}{RESET}")
 
-    sys.exit(0)
+    sys.exit(1 if blocking else 0)
 
 
 if __name__ == "__main__":

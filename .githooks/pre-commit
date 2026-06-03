@@ -1,0 +1,11 @@
+#!/bin/bash
+# Pre-commit hook: privacy check (blocking) + doc sync check (advisory).
+
+python3 scripts/privacy-check.py
+status=$?
+if [ $status -ne 0 ]; then
+    exit $status
+fi
+
+python3 scripts/doc-check.py
+# doc-check exits 0 (advisory only), but run it for the warning output.
