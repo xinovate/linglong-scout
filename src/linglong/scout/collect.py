@@ -72,9 +72,22 @@ def _is_noise_url(url: str) -> bool:
     return any(host == d or host.endswith("." + d) for d in _NOISE_DOMAINS)
 
 
-def _is_rsshub_url(url: str) -> bool:
-    """Check if a URL points to our RSSHub instance (port 1200)."""
-    return ":1200/" in url or url.rstrip("/").endswith(":1200")
+def _resolve_source_url(source: dict[str, str]) -> str:
+    """Resolve a source config to a fetchable URL.
+
+    If 'route' is present, prepend rsshub_url and inject access_key.
+    If 'url' is present, return as-is.
+    """
+    if "route" in source:
+        config = get_config()
+        base = (config.ingest.rsshub_url or "").rstrip("/")
+        path = source["route"].lstrip("/")
+        url = f"{base}/{path}"
+        if config.ingest.rsshub_access_key:
+            sep = "&" if "?" in url else "?"
+            url = f"{url}{sep}key={config.ingest.rsshub_access_key}"
+        return url
+    return source["url"]
 
 
 async def _github_headers() -> dict[str, str]:
@@ -467,10 +480,6 @@ def _validate_feed_url(url: str, *, allow_internal: bool = False) -> None:
 async def fetch_single_feed(url: str, name: str = "", max_items: int = 30, *, allow_internal: bool = False) -> list[dict[str, str]]:
     """Fetch and parse a single RSS/Atom feed."""
     _validate_feed_url(url, allow_internal=allow_internal)
-    config = get_config()
-    if config.ingest.rsshub_access_key and _is_rsshub_url(url):
-        sep = "&" if "?" in url else "?"
-        url = f"{url}{sep}key={config.ingest.rsshub_access_key}"
     try:
         async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
             resp = await client.get(
@@ -503,8 +512,8 @@ async def _fetch_rss_feeds() -> list[dict[str, str]]:
     sem = asyncio.Semaphore(3)
 
     async def _fetch_one(src: dict[str, str]) -> list[dict[str, str]]:
-        name = src.get("name", src.get("url", "unknown"))
-        url = src.get("url", "")
+        name = src.get("name", "unknown")
+        url = _resolve_source_url(src)
         if not url:
             return []
         async with sem:

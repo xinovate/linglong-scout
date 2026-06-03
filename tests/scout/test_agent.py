@@ -637,8 +637,9 @@ class TestApiKeyAuth:
 
         config_mock = MagicMock()
         config_mock.ingest.rss_sources = [
-            {"name": "36氪快讯", "url": "https://rsshub.example.com:1200/36kr/newsflashes"},
+            {"name": "36氪快讯", "route": "/36kr/newsflashes"},
         ]
+        config_mock.ingest.rsshub_url = "http://localhost:1200"
         config_mock.ingest.rsshub_access_key = "rsshub-secret"
 
         with patch("linglong.scout.collect.httpx.AsyncClient", return_value=mock_client), \
@@ -665,6 +666,7 @@ class TestApiKeyAuth:
             {"name": "TechCrunch", "url": "https://techcrunch.com/category/artificial-intelligence/feed/"},
             {"name": "The Verge", "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"},
         ]
+        config_mock.ingest.rsshub_url = "http://localhost:1200"
         config_mock.ingest.rsshub_access_key = "rsshub-secret"
 
         with patch("linglong.scout.collect.httpx.AsyncClient", return_value=mock_client), \

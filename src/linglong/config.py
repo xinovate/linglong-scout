@@ -58,6 +58,9 @@ class IngestConfig(BaseSettings):
     searxng_api_key: str | None = Field(
         default=None, description="SearXNG API key (Bearer Token via nginx auth)"
     )
+    rsshub_url: str | None = Field(
+        default=None, description="RSSHub instance base URL (for route-type sources)"
+    )
     rsshub_access_key: str | None = Field(
         default=None, description="RSSHub ACCESS_KEY for authenticated requests"
     )

@@ -7,7 +7,7 @@ import sys
 logger = logging.getLogger(__name__)
 
 
-def cmd_brief(args):
+def cmd_brief(args) -> None:
     """Generate morning brief and cache to Redis."""
     import asyncio
     from datetime import date
@@ -64,7 +64,7 @@ def cmd_brief(args):
         sys.exit(1)
 
 
-def cmd_ingest(args):
+def cmd_ingest(args) -> None:
     """Run scout packages."""
     import asyncio
 
@@ -88,7 +88,7 @@ def cmd_ingest(args):
         print(output)
 
 
-def cmd_collect(args):
+def cmd_collect(args) -> None:
     """Collect raw data without generating brief."""
     import asyncio
     import json
@@ -120,13 +120,13 @@ def cmd_collect(args):
     print(f"Collected {total} items for {today}: {json.dumps(counts)}")
 
 
-def cmd_serve(args):
+def cmd_serve(args) -> None:
     """Run MCP server."""
     from linglong.mcp import main as mcp_main
     mcp_main()
 
 
-def main():
+def main() -> None:
     """CLI entry point."""
     parser = argparse.ArgumentParser(
         prog="linglong-scout",

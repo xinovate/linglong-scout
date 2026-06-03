@@ -71,6 +71,8 @@ graph TD
 | `BriefHistory` | `src/linglong/scout/brief_history.py` | 按维度跨天去重 + 重叠检测 + fallback 输出 |
 | `FeedbackStore` | `src/linglong/scout/feedback.py` | 用户偏好存储 + 权重计算（按 user_id 隔离，server 单例） |
 | `ScoutError` | `src/linglong/scout/exceptions.py` | Domain 异常层级（`ScoutError` / `LLMError` / `SourceError`） |
+| `cache.py` | `src/linglong/scout/cache.py` | Brief 缓存与历史管理 |
+| `redis_client.py` | `src/linglong/scout/redis_client.py` | 共享 Redis 客户端工厂 |
 
 完整组件表 → [设计总览](design/00-overview.md)
 
@@ -144,6 +146,7 @@ llm:
   llm_model: ""                            # 必填
 ingest:
   searxng_url: "http://localhost:8088"
+  rsshub_url: "http://localhost:1200"       # RSSHub base URL (route-type sources)
   collect_schedule: "06:55"                # 留空禁用自动采集
   rss_sources:
     - name: AIHOT

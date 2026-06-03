@@ -68,7 +68,7 @@ IngestAgent.run()
 
 **并发策略**：`asyncio.Semaphore(3)`，11 源并发拉取。
 
-**RSSHub 认证**：`ACCESS_KEY` 仅追加到包含 `:1200` 端口的 URL。
+**RSSHub 认证**：源定义中带 `route` 字段的，采集时自动在前面拼接 `rsshub_url` 配置值，并注入 `access_key` 参数；带 `url` 字段的直接使用原 URL，不做拼接。
 
 ---
 

@@ -5,7 +5,7 @@ import logging
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 
 from linglong.mcp.token import parse_token
 
@@ -40,7 +40,7 @@ def get_current_token() -> str:
 class TokenAuthMiddleware(BaseHTTPMiddleware):
     """Validate Bearer token against Redis or static fallback.
 
-    Token format: ll-scout:{username}:{12-char-uuid}
+    Token format: ll-scout:{username}:{18-char-uuid}
     Redis key: same as token value, with value 'active'.
     If Redis is not configured or unavailable, falls back to static token comparison.
     """
@@ -77,7 +77,7 @@ class TokenAuthMiddleware(BaseHTTPMiddleware):
             return token == self._static_token
         return False
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> Response:
         if not request.url.path.startswith("/mcp/"):
             return await call_next(request)
 

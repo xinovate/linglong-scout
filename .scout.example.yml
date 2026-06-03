@@ -1,6 +1,7 @@
 # Linglong Scout 配置模板
 # 复制为 .scout.yml 并填入实际值
 # 敏感值通过 ${ENV_VAR} 从环境变量注入，不硬编码
+# Pydantic-settings env prefixes: LL_SCOUT_* (root), LL_SCOUT_LLM_* (llm), LL_INGEST_* (ingest)
 
 debug: false
 log_level: "INFO"
@@ -20,7 +21,8 @@ ingest:
   searxng_api_key: ${SEARXNG_API_KEY}
   search_timeout: 30
 
-  # RSSHub 实例认证（仅追加到 :1200 端口的 URL）
+  # RSSHub 实例（可选，仅 route 类型源使用）
+  rsshub_url: "http://localhost:1200"
   rsshub_access_key: ${RSSHUB_ACCESS_KEY}
 
   # LLM 早报生成
@@ -29,6 +31,8 @@ ingest:
   llm_timeout: 120
 
   # GitHub 开源趋势
+  # GitHub API token (optional, for higher rate limits).
+  # Set via environment variable: export GITHUB_TOKEN=ghp_xxxx
   github_trending_limits:
     daily: 5
     weekly: 3
@@ -54,37 +58,40 @@ ingest:
   raw_data_dir: ~/linglong/data/raw        # JSON 冷存储目录
   raw_redis_ttl_days: 14                   # Redis 热 TTL（天）
 
-  # RSS 订阅源（本地开发可注释掉 RSSHub 源）
+  # RSS 订阅源
+  # url 字段：直连 RSS，不做任何处理
+  # route 字段：拼接 rsshub_url + 注入 access_key（需配置 rsshub_url）
   rss_sources:
+    # ── 公开 RSS 源（直连，无需认证）──
     - name: AIHOT
       url: https://aihot.virxact.com/feed
     - name: 36氪
       url: https://36kr.com/feed
-    # RSSHub 源（需要本地 RSSHub 实例）
-    # - name: 36氪快讯
-    #   url: http://localhost:1200/36kr/newsflashes
     - name: 量子位
       url: https://www.qbitai.com/feed
     - name: The Rundown AI
       url: https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml
-    # - name: 华尔街见闻快讯
-    #   url: http://localhost:1200/wallstreetcn/live
-    # - name: 财新网
-    #   url: http://localhost:1200/caixin/latest
     - name: TechCrunch AI
       url: https://techcrunch.com/category/artificial-intelligence/feed/
     - name: The Verge AI
       url: https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
-    # - name: 工信部文件公示
-    #   url: http://localhost:1200/gov/miit/wjgs
-    # - name: 发改委新闻动态
-    #   url: http://localhost:1200/gov/ndrc/xwdt
     - name: VentureBeat AI
       url: https://venturebeat.com/category/ai/feed/
     - name: SyncedReview
       url: https://syncedreview.com/feed/
     - name: EU AI Act
       url: https://artificialintelligenceact.eu/feed/
+    # ── RSSHub 源（需要 rsshub_url + rsshub_access_key 配置）──
+    # - name: 36氪快讯
+    #   route: /36kr/newsflashes
+    # - name: 华尔街见闻快讯
+    #   route: /wallstreetcn/live
+    # - name: 财新网
+    #   route: /caixin/latest
+    # - name: 工信部文件公示
+    #   route: /gov/miit/wjgs
+    # - name: 发改委新闻动态
+    #   route: /gov/ndrc/xwdt
 
   # 采集包定义
   # 策略：RSS 为主力（人工编辑筛选，高信噪比），SearXNG 为实体级精准补充

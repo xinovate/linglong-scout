@@ -27,6 +27,7 @@ def _mock_config():
     config.ingest.searxng_url = "http://localhost:8088"
     config.ingest.search_timeout = 10.0
     config.ingest.searxng_api_key = None
+    config.ingest.rsshub_url = None
     config.ingest.rsshub_access_key = None
     config.ingest.rss_sources = []
     config.ingest.github_trending_limits = {"daily": 5, "weekly": 3, "monthly": 3}

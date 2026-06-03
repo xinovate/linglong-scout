@@ -1,6 +1,6 @@
 # Scout 设计总览
 
-> 创建日期：2026-05-25 | 最后更新：2026-05-29 | 状态：已实现（v2.10）
+> 创建日期：2026-05-25 | 最后更新：2026-06-03 | 状态：已实现（v2.12）
 > 先读 [Scout README](../README.md) 了解项目定位和快速上手，本文件是设计层深入文档。
 
 ---
@@ -29,6 +29,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | D-04 | [缓存与调度](04-cache.md) | 运维层 | ✅ 已实现 | D-02 | 2026-05-26 |
 | D-05 | [Prompt 设计](05-prompt.md) | 内容层 | ✅ 已实现 | D-02 | 2026-05-26 |
 | D-06 | [MCP 接入](06-mcp.md) | 接入层 | ✅ 已实现 | D-02 | 2026-05-28 |
+| D-07 | [MCP 工具参考手册](07-mcp-tools.md) | 参考层 | ✅ 已实现 | D-06 | 2026-06-02 |
 
 ---
 
@@ -84,6 +85,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | v2.9 | 多用户 + 自调度 | 用户偏好/缓存按 token 隔离 + 容器内 asyncio 自动采集调度 + collect/agent 拆分 |
 | v2.10 | 内部质量优化 | LLM async + Anthropic system 参数 + domain exceptions + 优雅退出 + pip-compile + tools 去重 |
 | v2.11 | RSS-first 采集策略 | SearXNG 关键词从 63 精简到 17（仅实体级精准查询），RSS 为主力 + OpenGithubs 描述修复 + GITHUB_TOKEN 环境变量 |
+| v2.12 | 早报 prompt 紧凑格式 + pre-generate brief + githooks 管理 | prompt 段落标题嵌入格式标签；scheduler 采集后预生成早报避免 MCP 超时；doc-check pre-push 阻塞模式；.githooks 统一 hook 管理 |
 
 ---
 
@@ -122,6 +124,8 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | `SourcePackage` | `src/linglong/scout/package.py` | 采集包定义模型 |
 | `FeedbackStore` | `src/linglong/scout/feedback.py` | 用户偏好存储（按 user_id 隔离）+ 权重计算 |
 | `ScoutError` | `src/linglong/scout/exceptions.py` | Domain 异常层级（`ScoutError` / `LLMError` / `SourceError`） |
+| `cache` | `src/linglong/scout/cache.py` | Brief 缓存与历史管理（get_brief/set_brief、load_history/save_history） |
+| `redis_client` | `src/linglong/scout/redis_client.py` | 共享 Redis 客户端工厂（get_redis） |
 | `morning_brief.md` | `src/linglong/scout/prompts/morning_brief.md` | 早报 prompt 模板 |
 
 ---
@@ -134,6 +138,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 |------|------|------|
 | RSS 源 | `ingest.rss_sources` | 11 个订阅源 |
 | 搜索关键词 | `ingest.packages[].search_queries` | 关键词组 |
+| RSSHub URL | `ingest.rsshub_url` | RSSHub instance base URL (route-type sources auto-prepend this) |
 | 去重窗口 | `ingest.dedup_windows` | 各维度回看天数 |
 | 缓存 | `mcp.redis_url` | Redis 连接地址 |
 | 原始数据 | `ingest.raw_data_dir` / `ingest.raw_redis_ttl_days` | 冷存储目录 + 热 TTL |
