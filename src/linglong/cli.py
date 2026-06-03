@@ -152,7 +152,7 @@ def cmd_init(args) -> None:
         lines.append(f"{key}={token}")
 
     env_path.write_text("\n".join(lines) + "\n")
-    print(f"Token generated and saved to .env:")
+    print("Token generated and saved to .env:")
     print(f"  {key}={token}")
     print(f"Username: {username}")
 

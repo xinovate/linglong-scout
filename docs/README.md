@@ -159,11 +159,12 @@ OpenClaw 配置、认证流程、部署架构详情 → [MCP 接入](design/06-m
 ## CLI 命令
 
 ```bash
+linglong-scout init           # 生成认证 token 写入 .env（HTTP 模式必需，首次运行）
 linglong-scout brief          # 生成早报（有缓存直接返回）
 linglong-scout brief --force  # 强制重新生成
 linglong-scout collect        # 仅采集，不调 LLM
 linglong-scout scout          # 手动运行采集包
-linglong-scout serve          # 启动 MCP 服务
+linglong-scout serve          # 启动 MCP 服务（HTTP 模式需先 init）
 ```
 
 CLI 加 `-v` 切换 DEBUG 日志。日志路径 `~/linglong/logs/scout.log`（5MB × 3 备份）。
