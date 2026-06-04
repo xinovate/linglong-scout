@@ -25,15 +25,15 @@ flowchart TD
     TRANSPORT -->|streamable-http| HTTP_CHECK{auth_token?}
 
     HTTP_CHECK -->|有| HTTP_AUTH["create_http_app()<br/>+ TokenAuthMiddleware<br/>+ 自动采集调度<br/>+ uvicorn 监听"]
-    HTTP_CHECK -->|无| HTTP_NOAUTH["server.run(transport='streamable-http')<br/>无认证"]
+    HTTP_CHECK -->|无| HTTP_AUTO["auto-generate token<br/>+ 写入 Redis<br/>+ 日志警告"]
 
     STDIO --> RUNNING(["服务运行中"])
     HTTP_AUTH --> RUNNING
-    HTTP_NOAUTH --> RUNNING
+    HTTP_AUTO --> RUNNING
 
     style STDIO fill:#4CAF50,color:#fff
     style HTTP_AUTH fill:#2196F3,color:#fff
-    style HTTP_NOAUTH fill:#FF9800,color:#fff
+    style HTTP_AUTO fill:#FF9800,color:#fff
 ```
 
 ---
