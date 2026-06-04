@@ -33,12 +33,28 @@ def _run_http(config) -> None:
     import anyio
 
     if not config.mcp.auth_token:
-        logger.error(
-            "auth_token is required for HTTP mode. "
-            "Run 'linglong-scout init' to generate one, "
-            "or set LL_MCP_AUTH_TOKEN in .env"
+        from linglong.mcp.token import generate_token
+
+        config.mcp.auth_token = generate_token("auto")
+        logger.warning(
+            "No auth_token configured. Auto-generated: %s",
+            config.mcp.auth_token,
         )
-        raise SystemExit(1)
+        logger.warning(
+            "Set LL_MCP_AUTH_TOKEN in .env or run 'linglong-scout init' to persist.",
+        )
+
+    # Store token in Redis so the auth middleware can validate it
+    if config.mcp.redis_url:
+        try:
+            import redis as redis_lib
+
+            r = redis_lib.from_url(config.mcp.redis_url, decode_responses=True)
+            r.set(config.mcp.auth_token, "active")
+            r.close()
+            logger.info("Auth token registered in Redis")
+        except Exception:
+            logger.warning("Failed to store token in Redis, will use static fallback")
 
     async def _serve():
         import asyncio

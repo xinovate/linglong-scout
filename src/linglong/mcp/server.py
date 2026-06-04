@@ -41,18 +41,20 @@ def create_http_app() -> Starlette:
     """Create a Starlette app with MCP route for scout tools."""
     config = get_config()
 
-    allowed_hosts = []
-    if config.mcp.allowed_hosts:
-        allowed_hosts = config.mcp.allowed_hosts
-
     from mcp.server.fastmcp.server import TransportSecuritySettings
+
+    # Empty allowed_hosts means "no restriction" — pass None to disable
+    # DNS rebinding protection rather than rejecting all requests.
+    security = None
+    if config.mcp.allowed_hosts:
+        security = TransportSecuritySettings(
+            allowed_hosts=config.mcp.allowed_hosts,
+        )
 
     server = FastMCP(
         "linglong-scout",
         streamable_http_path="/mcp/scout",
-        transport_security=TransportSecuritySettings(
-            allowed_hosts=allowed_hosts,
-        ),
+        transport_security=security,
     )
     init_stores()
     for tool in _INGEST_TOOLS:

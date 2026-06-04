@@ -17,12 +17,12 @@ llm:
 # ── 信息采集 ──────────────────────────────────
 ingest:
   # SearXNG 搜索服务
-  searxng_url: "http://localhost:8088"
+  searxng_url: ${LL_INGEST_SEARXNG_URL:-http://localhost:8088}
   searxng_api_key: ${SEARXNG_API_KEY}
   search_timeout: 30
 
   # RSSHub 实例（可选，仅 route 类型源使用）
-  rsshub_url: "http://localhost:1200"
+  rsshub_url: ${LL_INGEST_RSSHUB_URL:-http://localhost:1200}
   rsshub_access_key: ${RSSHUB_ACCESS_KEY}
 
   # LLM 早报生成
@@ -142,8 +142,8 @@ ingest:
 
 # ── MCP Server ────────────────────────────────
 mcp:
-  transport: "stdio"                       # stdio（本地）| streamable-http（远程部署）
-  host: "0.0.0.0"                            # Docker 部署必须 0.0.0.0，stdio 模式忽略此值
+  transport: ${LL_SCOUT_MCP_TRANSPORT:-stdio}  # stdio（本地）| streamable-http（远程部署）
+  host: ${LL_SCOUT_MCP_HOST:-127.0.0.1}        # Docker 部署设为 0.0.0.0，stdio 模式忽略此值
   port: 9900
   auth_token: ${LL_MCP_AUTH_TOKEN}         # Bearer token（留空或未设置 = 无认证）
   redis_url: ${REDIS_URL}                  # 远程部署用 Redis 验证 token

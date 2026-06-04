@@ -89,8 +89,8 @@ git clone https://github.com/xinovate/linglong-scout.git
 cd linglong-scout
 
 # 配置
-cp .scout.example.yml .scout.yml      # 编辑填入实际值
-cp .env.example .env                   # 填入 API Key 和密码
+cp .scout.example.yml .scout.yml      # 编辑填入 LLM API Key 等必填项
+cp .env.example .env                   # 填入 REDIS_PASSWORD（必填）
 
 # SearXNG 配置（可选，默认已包含开发用 settings.yml）
 # 编辑 config/searxng/settings.yml 自定义搜索引擎
@@ -100,7 +100,15 @@ docker compose up -d
 docker compose logs -f scout
 ```
 
-Docker 内部网络 `scout-net` 互联，仅 Scout 暴露 `127.0.0.1:9900` 到主机，Redis/RSSHub/SearXNG 仅容器内可达。首次 `docker compose up` 前需编辑 `.env` 填入 `REDIS_PASSWORD`，`.scout.yml` 填入 LLM API Key。
+`.scout.yml` 必填项：
+- `llm.llm_api_key` — LLM API Key
+- `llm.llm_base_url` — LLM API 端点
+- `llm.llm_model` — 模型名称
+
+`.env` 必填项：
+- `REDIS_PASSWORD` — Redis 密码
+
+Docker 内部网络 `scout-net` 互联，仅 Scout 暴露 `127.0.0.1:9900` 到主机，Redis/RSSHub/SearXNG 仅容器内可达。`.scout.example.yml` 中的网络地址字段使用 `${ENV_VAR:-default}` 语法，本地开发走默认值，Docker 环境由 `docker-compose.yml` 自动注入容器内地址，无需手动修改。
 
 ---
 
@@ -167,7 +175,7 @@ Scout 暴露 MCP Server，Claude Code、OpenClaw 等客户端均可接入：
 
 ## 配置
 
-所有配置通过 `.scout.yml` 管理，敏感值用 `${ENV_VAR}` 引用环境变量。HTTP 模式强制 Token 认证（`linglong-scout init` 生成），stdio 模式无需认证。
+所有配置通过 `.scout.yml` 管理。敏感值用 `${ENV_VAR}` 引用环境变量，Docker 相关字段用 `${ENV_VAR:-default}` 支持环境覆盖（本地走默认值，Docker 由 `docker-compose.yml` 注入容器内地址）。HTTP 模式强制 Token 认证（`linglong-scout init` 生成），stdio 模式无需认证。
 
 ```yaml
 llm:
@@ -176,8 +184,8 @@ llm:
   llm_model: ""                    # 必填
 
 ingest:
-  searxng_url: "http://localhost:8088"
-  rsshub_url: "http://localhost:1200"
+  searxng_url: ${LL_INGEST_SEARXNG_URL:-http://localhost:8088}
+  rsshub_url: ${LL_INGEST_RSSHUB_URL:-http://localhost:1200}
   collect_schedule: "06:55"        # 每天自动采集，留空禁用
   rss_sources:
     - name: AIHOT

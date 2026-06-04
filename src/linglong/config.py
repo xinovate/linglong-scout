@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import threading
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -171,15 +172,23 @@ def _find_yaml_config() -> Path | None:
     return None
 
 
+_ENV_VAR_RE = re.compile(r"^\$\{([^}:]+)(?::-(.*))?\}$", re.DOTALL)
+
+
 def _interpolate_env(data: Any) -> Any:
-    """Recursively interpolate ${ENV_VAR} references in config values."""
+    """Recursively interpolate ${ENV_VAR} and ${ENV_VAR:-default} in config values."""
     if isinstance(data, str):
-        if data.startswith("${") and data.endswith("}"):
-            env_var = data[2:-1]
-            value = os.environ.get(env_var, "")
-            if not value:
-                logger.warning("Environment variable %s not set", env_var)
-            return value
+        m = _ENV_VAR_RE.match(data)
+        if m:
+            env_var = m.group(1)
+            default = m.group(2)  # None when no :-default
+            value = os.environ.get(env_var)
+            if value is not None:
+                return value
+            if default is not None:
+                return default
+            logger.warning("Environment variable %s not set", env_var)
+            return ""
         return data
     if isinstance(data, dict):
         return {k: _interpolate_env(v) for k, v in data.items()}

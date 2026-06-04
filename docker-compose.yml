@@ -16,6 +16,12 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      # Docker-specific overrides (internal network service names)
+      - LL_SCOUT_MCP_TRANSPORT=streamable-http
+      - LL_SCOUT_MCP_HOST=0.0.0.0
+      - LL_INGEST_SEARXNG_URL=http://searxng:8080
+      - LL_INGEST_RSSHUB_URL=http://rsshub:1200
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     env_file: .env
     volumes:
       - ./.scout.yml:/app/.scout.yml:ro
