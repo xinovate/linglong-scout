@@ -42,7 +42,7 @@ IngestAgent.run()
 
 | 优先级 | 数据源 | 方法 | 输出 |
 |--------|--------|------|------|
-| 1 | OpenGithubs | GitHub Contents API | 日 5 + 周 3 + 月 3 = 11 条 |
+| 1 | OpenGithubs | GitHub Contents API（日/周榜列目录取最新文件） | 日 4 + 周 2 + 月 2 = 8 条 |
 | 2 | wangchujiang.com | HTML 解析 | 仅日榜，有缓存延迟 |
 | 3 | GitHub Search API | `created:>30days stars:>500` | 非趋势，兜底 |
 

@@ -259,14 +259,26 @@ async def _fetch_opengithubs(
 
         try:
             async with httpx.AsyncClient(timeout=15) as client:
-                for attempt_date in [today, today - timedelta(days=1)]:
-                    if attempt_date != today and period == "monthly":
-                        break
-                    file_path = path_fn(attempt_date)
+                if period == "monthly":
+                    file_path = path_fn(today)
                     url = f"{_OPENGITHUB_API}/{repo}/contents/{file_path}"
                     response = await client.get(url, headers=headers)
-                    if response.status_code == 200:
-                        break
+                else:
+                    # daily/weekly: list directory and pick latest file
+                    dir_path = path_fn(today).rsplit("/", maxsplit=1)[0]
+                    dir_url = f"{_OPENGITHUB_API}/{repo}/contents/{dir_path}"
+                    dir_resp = await client.get(dir_url, headers=headers)
+                    dir_resp.raise_for_status()
+                    files = dir_resp.json()
+                    md_files = sorted(
+                        [f["name"] for f in files if f["name"].endswith(".md")],
+                        reverse=True,
+                    )
+                    if not md_files:
+                        raise LookupError(f"No .md files in {dir_path}")
+                    latest = md_files[0]
+                    file_url = f"{_OPENGITHUB_API}/{repo}/contents/{dir_path}/{latest}"
+                    response = await client.get(file_url, headers=headers)
 
                 response.raise_for_status()
 
