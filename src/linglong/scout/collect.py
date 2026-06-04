@@ -330,7 +330,6 @@ def _parse_opengithub_table(
     for full_name, url, total_stars, growth in rows:
         if full_name in seen:
             continue
-        seen.add(full_name)
 
         desc = descriptions.get(full_name, "")
 
@@ -348,7 +347,9 @@ def _parse_opengithub_table(
             "period": growth_label,
         })
 
-    return repos[:limit]
+    selected = repos[:limit]
+    seen.update(r["title"].split(" ")[0] for r in selected)
+    return selected
 
 
 async def _fetch_trending_html(max_results: int) -> list[dict[str, str]]:

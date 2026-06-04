@@ -48,6 +48,8 @@ IngestAgent.run()
 
 **认证**：优先用 `gh auth token`（5000 req/hr），未认证仅 60 req/hr。
 
+**跨周期去重**：`seen` set 按仓库名去重，只在最终入选的 repo 上标记，避免 daily 未入选的 repo 污染 weekly 去重。
+
 ---
 
 ## RSS 订阅源（11 源，信息主力）
