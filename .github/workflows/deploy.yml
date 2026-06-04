@@ -24,7 +24,7 @@ jobs:
           script: |
             cd /opt/linglong-scout
             git checkout -- .
-            git -c http.proxy=http://127.0.0.1:7890 pull origin main
+            git pull origin main
             docker compose build --no-cache
             docker compose up -d
             docker image prune -f
