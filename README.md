@@ -105,8 +105,8 @@ docker compose logs -f scout
 - `llm.llm_base_url` — LLM API 端点
 - `llm.llm_model` — 模型名称
 
-`.env` 必填项：
-- `REDIS_PASSWORD` — Redis 密码
+`.env`（Docker 部署时需要）：
+- `REDIS_PASSWORD` — Redis 密码（本地 stdio 模式不需要）
 
 Docker 内部网络 `scout-net` 互联，仅 Scout 暴露 `127.0.0.1:9900` 到主机，Redis/RSSHub/SearXNG 仅容器内可达。`.scout.example.yml` 中的网络地址字段使用 `${ENV_VAR:-default}` 语法，本地开发走默认值，Docker 环境由 `docker-compose.yml` 自动注入容器内地址，无需手动修改。
 
