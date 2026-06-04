@@ -22,7 +22,7 @@ def get_today_commits() -> list[str]:
     """Get commit messages from today."""
     today = date.today().isoformat()
     result = subprocess.run(
-        ["git", "log", "--since", today, "--oneline", "--no-merges"],
+        ["git", "log", "--since", f"{today} 00:00:00", "--oneline", "--no-merges"],
         capture_output=True,
         text=True,
     )

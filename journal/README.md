@@ -7,6 +7,7 @@
 
 | 日期 | 主题 | 关键结论 |
 |------|------|----------|
+| 2026-06-04 | README 全流程验证 + 维度名统一 + OpenGithubs 列目录修复 | 临时目录端到端验证 6 个命令；新建 .env.example + SearXNG 默认配置；pydantic extra=ignore 修复二次 init 崩溃；OpenGithubs daily/weekly 列目录取最新文件（解决上游延迟只拿到月榜）；journal-check --since 纯日期 bug 修复 |
 | 2026-06-03 | v2.14 强制鉴权 + 早报维度合并 + Docker 合并 + README 重构 | HTTP 强制 auth_token + init 命令；早报 6 维度合并为 5（行业要闻+精选限流）；Docker Compose 四合一；移除 search_web（7→6 工具）；超级个体/OPC 关键词 |
 | 2026-06-02 | 早报格式重构 + CI deploy 修复 + 服务器配置修复 | 融资独立段+开源双 star 列；CI deploy 三连失败（本地改动/404/401→TCP 检查）；Redis 密码+allowed_hosts 遗漏修复；journal-check 三项检查增强 |
 | 2026-06-01 | v2.11 RSS-first 采集策略 + OpenGithubs 修复 | SearXNG 63→20 关键词（仅实体级精准查询）；RSS 11→14 源（+VentureBeat/SyncedReview/EU AI Act）；OpenGithubs 描述解析 bug 修复（re.DOTALL 跨段匹配）；GITHUB_TOKEN 环境变量支持（Docker 无 gh CLI）；总数据 493→~210 条，信噪比大幅提升 |
