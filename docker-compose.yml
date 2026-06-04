@@ -21,7 +21,7 @@ services:
       - LL_SCOUT_MCP_HOST=0.0.0.0
       - LL_INGEST_SEARXNG_URL=http://searxng:8080
       - LL_INGEST_RSSHUB_URL=http://rsshub:1200
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis}@redis:6379/0
     env_file: .env
     volumes:
       - ./.scout.yml:/app/.scout.yml:ro
@@ -41,11 +41,11 @@ services:
     image: redis:7-alpine
     container_name: linglong-redis
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis} --appendonly yes
     volumes:
       - ./data/redis:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
