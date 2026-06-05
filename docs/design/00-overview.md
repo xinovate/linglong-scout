@@ -109,7 +109,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | 2 | 行业要闻 | 公司战略、重大产品发布、超级个体/OPC | SearXNG + RSS |
 | 3 | 融资动态 | 融资事件、IPO、估值变动 | SearXNG + RSS |
 | 4 | 政策动态 | AI 监管、产业政策 | SearXNG + RSS |
-| 5 | 开源趋势 | AI 新项目 Stars 增长 | OpenGithubs（日/周/月三段） |
+| 5 | 开源趋势 | AI 新项目 Stars 增长 | OpenGithubs（日增长 TOP 8） |
 
 ---
 

@@ -21,7 +21,7 @@ Scout 早报覆盖 AI 领域 5 个维度：
 | 关键人物 | 观点/言论/人事变动/个体成就 | SearXNG + RSS |
 | 行业要闻 | 公司战略、重大产品发布、超级个体/OPC | SearXNG + RSS |
 | 政策动态 | AI 监管、产业政策 | SearXNG + RSS |
-| 开源趋势 | AI 新项目 Stars 增长 | OpenGithubs（日/周/月三段） |
+| 开源趋势 | AI 新项目 Stars 增长 | OpenGithubs（日增长 TOP 8） |
 | 融资动态 | 融资事件、IPO、估值变动 | SearXNG + RSS |
 
 详细的维度定义、信源实测、实现路线 → [设计总览](design/00-overview.md)

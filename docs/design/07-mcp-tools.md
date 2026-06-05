@@ -73,7 +73,7 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 
 | 参数 | 类型 | 必选 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `daily` | int | 否 | 5 | 日增长排行数量 |
+| `daily` | int | 否 | 10 | 日增长排行数量 |
 | `weekly` | int | 否 | 3 | 周增长排行数量 |
 | `monthly` | int | 否 | 3 | 月增长排行数量 |
 
@@ -83,7 +83,7 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 {
   "name": "fetch_github_trending",
   "arguments": {
-    "daily": 5,
+    "daily": 10,
     "weekly": 3,
     "monthly": 3
   }
