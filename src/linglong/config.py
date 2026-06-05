@@ -77,7 +77,7 @@ class IngestConfig(BaseSettings):
     )
 
     github_trending_limits: dict[str, int] = Field(
-        default_factory=lambda: {"daily": 5, "weekly": 3, "monthly": 3},
+        default_factory=lambda: {"daily": 10, "weekly": 3, "monthly": 3},
         description="GitHub trending repo counts per period",
     )
     github_search_fallback: dict[str, int] = Field(
