@@ -86,7 +86,7 @@ class IngestConfig(BaseSettings):
     )
 
     dedup_windows: dict[str, int] = Field(
-        default_factory=lambda: {"关键人物": 14, "行业要闻": 7, "融资动态": 7, "政策动态": 14},
+        default_factory=lambda: {"关键人物": 14, "行业要闻": 7, "融资动态": 7, "政策动态": 14, "学术前沿": 14},
         description="Per-dimension lookback days for dedup",
     )
 

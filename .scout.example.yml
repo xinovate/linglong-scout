@@ -47,6 +47,7 @@ ingest:
     行业要闻: 7
     融资动态: 7
     政策动态: 14
+    学术前沿: 14
 
   # 早报时段标记
   brief_schedule_time: "07:00"
@@ -81,6 +82,15 @@ ingest:
       url: https://syncedreview.com/feed/
     - name: EU AI Act
       url: https://artificialintelligenceact.eu/feed/
+    # ── 学术前沿 ──
+    - name: arXiv cs.AI
+      url: https://arxiv.org/rss/cs.AI
+    - name: arXiv cs.CL
+      url: https://arxiv.org/rss/cs.CL
+    - name: arXiv cs.LG
+      url: https://arxiv.org/rss/cs.LG
+    - name: Hugging Face Blog
+      url: https://huggingface.co/blog/feed.xml
     # ── RSSHub 源（需要 rsshub_url + rsshub_access_key 配置）──
     # - name: 36氪快讯
     #   route: /36kr/newsflashes

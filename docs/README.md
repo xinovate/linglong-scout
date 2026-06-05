@@ -14,12 +14,13 @@
 
 ## 信息维度
 
-Scout 早报覆盖 AI 领域 5 个维度：
+Scout 早报覆盖 AI 领域 6 个维度：
 
 | 维度 | 典型内容 | 数据源 |
 |------|---------|--------|
 | 关键人物 | 观点/言论/人事变动/个体成就 | SearXNG + RSS |
 | 行业要闻 | 公司战略、重大产品发布、超级个体/OPC | SearXNG + RSS |
+| 学术前沿 | 重大论文、架构创新、训练范式突破 | arXiv RSS + Hugging Face Blog |
 | 政策动态 | AI 监管、产业政策 | SearXNG + RSS |
 | 开源趋势 | AI 新项目 Stars 增长 | OpenGithubs（日增长 TOP 8） |
 | 融资动态 | 融资事件、IPO、估值变动 | SearXNG + RSS |
@@ -72,7 +73,7 @@ graph TD
     subgraph 数据采集
         A1[SearXNG<br/>17 组精准关键词] --> D[聚合去重]
         A2[OpenGithubs<br/>GitHub Trending<br/>日/周/月三段] --> D
-        A3[RSS 订阅源<br/>9 个公开源 + 5 个 RSSHub 源] --> D
+        A3[RSS 订阅源<br/>9+4 个公开源 + 5 个 RSSHub 源] --> D
     end
 
     D --> R[RawStore<br/>结构化存储]

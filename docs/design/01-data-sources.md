@@ -1,6 +1,6 @@
 # D-01 数据源架构
 
-> 状态：✅ 已实现 | 最后更新：2026-06-01
+> 状态：✅ 已实现 | 最后更新：2026-06-05
 > 属于 [D-00 设计总览](00-overview.md) 的数据层子设计。
 
 ---
@@ -11,7 +11,7 @@ Scout 采用 **RSS 为主力、SearXNG 为精准补充** 的采集策略。三�
 
 ```
 IngestAgent.run()
-  ├── _fetch_rss_feeds()         RSS 11 源（主力，人工编辑筛选） Semaphore(3) 并发
+  ├── _fetch_rss_feeds()         RSS 15 源（主力，含学术前沿 arXiv 3 源 + HF Blog） Semaphore(3) 并发
   ├── _search_all_keywords()     SearXNG 17 次精准查询（补充） Semaphore(5) 并发
   └── _github_trending()         GitHub Trending 日/周/月三级 fallback
 ```
@@ -52,7 +52,7 @@ IngestAgent.run()
 
 ---
 
-## RSS 订阅源（11 源，信息主力）
+## RSS 订阅源（15 源，信息主力）
 
 | 源 | 类型 | 条目/次 | 维度覆盖 |
 |---|------|---------|---------|
@@ -65,10 +65,17 @@ IngestAgent.run()
 | 财联社深度 | RSSHub | ~10 | 行业要闻、政策动态 |
 | TechCrunch AI | RSS 直连 | ~20 | 关键人物、行业要闻（英文） |
 | The Verge AI | RSS 直连 | ~15 | 行业要闻（英文） |
+| VentureBeat AI | RSS 直连 | ~15 | 行业要闻（英文） |
+| SyncedReview | RSS 直连 | ~10 | 行业要闻（英文） |
+| EU AI Act | RSS 直连 | ~5 | 政策动态 |
+| arXiv cs.AI | RSS 直连 | ~100 | 学术前沿 |
+| arXiv cs.CL | RSS 直连 | ~100 | 学术前沿 |
+| arXiv cs.LG | RSS 直连 | ~100 | 学术前沿 |
+| Hugging Face Blog | RSS 直连 | ~10 | 学术前沿 |
 | 工信部文件公示 | RSSHub (gov) | ~15 | 政策动态 |
 | 发改委新闻动态 | RSSHub (gov) | ~25 | 政策动态 |
 
-**并发策略**：`asyncio.Semaphore(3)`，11 源并发拉取。
+**并发策略**：`asyncio.Semaphore(3)`，15 源并发拉取。
 
 **RSSHub 认证**：源定义中带 `route` 字段的，采集时自动在前面拼接 `rsshub_url` 配置值，并注入 `access_key` 参数；带 `url` 字段的直接使用原 URL，不做拼接。
 
@@ -80,7 +87,7 @@ IngestAgent.run()
 |------|------|------|
 | SearXNG 17 次查询 | ~15s | ~3s |
 | GitHub | ~2s | ~2s（与 SearXNG 并行） |
-| RSS 11 源 | ~10s | ~3s（并行） |
+| RSS 15 源 | ~10s | ~3s（并行） |
 | **数据采集总耗时** | **~27s** | **~3s** |
 
 ---

@@ -101,15 +101,16 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 
 ---
 
-## 信息维度（5 维度）
+## 信息维度（6 维度）
 
 | # | 维度 | 典型内容 | 数据源 |
 |---|------|---------|--------|
 | 1 | 关键人物 | 观点/言论/人事变动/个体成就 | SearXNG + RSS |
 | 2 | 行业要闻 | 公司战略、重大产品发布、超级个体/OPC | SearXNG + RSS |
-| 3 | 融资动态 | 融资事件、IPO、估值变动 | SearXNG + RSS |
-| 4 | 政策动态 | AI 监管、产业政策 | SearXNG + RSS |
-| 5 | 开源趋势 | AI 新项目 Stars 增长 | OpenGithubs（日增长 TOP 8） |
+| 3 | 学术前沿 | 重大论文、架构创新、训练范式突破 | arXiv RSS + Hugging Face Blog |
+| 4 | 融资动态 | 融资事件、IPO、估值变动 | SearXNG + RSS |
+| 5 | 政策动态 | AI 监管、产业政策 | SearXNG + RSS |
+| 6 | 开源趋势 | AI 新项目 Stars 增长 | OpenGithubs（日增长 TOP 8） |
 
 ---
 
