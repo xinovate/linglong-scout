@@ -110,6 +110,14 @@ async def _github_headers() -> dict[str, str]:
     return headers
 
 
+def _detect_query_lang(query: str) -> str:
+    """Detect query language: return 'zh-CN' if CJK chars present, else 'en'."""
+    for ch in query:
+        if "一" <= ch <= "鿿" or "㐀" <= ch <= "䶿":
+            return "zh-CN"
+    return "en"
+
+
 # --- SearXNG ---
 
 async def _searxng_search(query: str, max_results: int = 15) -> list[dict[str, str]]:
@@ -122,6 +130,7 @@ async def _searxng_search(query: str, max_results: int = 15) -> list[dict[str, s
         "q": query,
         "format": "json",
         "categories": "general",
+        "language": _detect_query_lang(query),
     }
     headers: dict[str, str] = {}
     if config.ingest.searxng_api_key:
