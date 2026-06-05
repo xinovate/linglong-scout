@@ -196,7 +196,7 @@ class TestParseOpengithub:
         repos = _parse_opengithub_table(md, "日增长", 5, seen)
         assert len(repos) == 2
         assert repos[0]["title"] == "foo/bar (+2637⭐ 日增长)"
-        assert repos[0]["stars"] == "21700"
+        assert repos[0]["stars"] == "21.7k"
         assert repos[1]["growth"] == "1819"
 
     def test_dedup_across_periods(self):

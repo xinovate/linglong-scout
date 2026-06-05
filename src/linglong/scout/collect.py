@@ -334,15 +334,12 @@ def _parse_opengithub_table(
         desc = descriptions.get(full_name, "")
 
         raw_growth = growth.replace(",", "")
-        raw_stars = total_stars
-        if total_stars.endswith("k"):
-            raw_stars = str(int(float(total_stars[:-1]) * 1000))
 
         repos.append({
             "title": f"{full_name} (+{raw_growth}⭐ {growth_label})",
             "url": url,
             "snippet": desc[:200],
-            "stars": raw_stars,
+            "stars": total_stars,
             "growth": raw_growth,
             "period": growth_label,
         })
