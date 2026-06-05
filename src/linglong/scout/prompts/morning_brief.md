@@ -50,7 +50,7 @@
 
 ### ⭐ 开源趋势 — 仅取日增长 TOP 8，输出 markdown 表格
 
-严格只使用 GitHub 数据区中「日增长」项目，按日增长量降序取前 8 个。不要使用周增长或月增长数据。
+严格只使用 GitHub 数据区中「日增长」项目，按日增长量降序取前 8 个。不要使用周增长或月增长数据。采集时Stars 列必须从 GitHub 数据区的 Stars 字段中提取，不得留空或用"—"代替。
 
 | 项目 | 日增长 | 采集时Stars | 简介 | 链接 |
 |--------|---------|----------|------|------|
@@ -84,7 +84,7 @@
 6. **过滤噪音**：忽略词典/百科/官网首页/广告/SEO/重复报道
 7. **所有维度按日期由近及远排序**：最近日期排第一行
 8. **开源趋势只取日增长 TOP 8**：从 GitHub 数据区中仅选取「日增长」项目，按日增长量降序取前 8 个
-   - 日增长和总 Stars 列必须填写，数字必须与原始数据完全一致，不得编造
+   - 日增长和采集时Stars 列必须从 GitHub 数据区原文提取（Stars 字段值如"49.9k"），不得留空、省略或用"—"代替，不得编造
    - 不使用周增长或月增长数据
    - 简介列从项目 snippet 中提炼一句话
 9. **关键人物覆盖**：Yann LeCun、Geoffrey Hinton、Andrej Karpathy、Ilya Sutskever、Sam Altman、Dario Amodei、Jensen Huang、何恺明、李飞飞、Andrew Ng、Harrison Chase、Lilian Weng、Jim Fan、Demis Hassabis、梁文锋、周靖人、戴文渊、王小川、李开复、朱啸虎等
