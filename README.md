@@ -5,6 +5,7 @@ AI 行业信息采集 Agent —— 搜索、RSS、GitHub Trending 多源并发�
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Tests](https://img.shields.io/badge/tests-174-green)
 ![License](https://img.shields.io/badge/license-MIT-yellow)
+[![SafeSkill 88/100](https://img.shields.io/badge/SafeSkill-88%2F100_Passes%20with%20Notes-yellow)](https://safeskill.dev/scan/xinovate-linglong-scout)
 
 ```mermaid
 graph LR
