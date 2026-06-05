@@ -34,8 +34,6 @@ IngestAgent.run()
 
 **并发策略**：`asyncio.Semaphore(5)`，17 次查询并发执行。
 
-**语言检测**：根据关键词是否含 CJK 字符自动切换 `language` 参数（中文→`zh-CN`，英文→`en`），确保 Bing 等引擎返回正确语言的结果。
-
 **认证**：Bearer Token（`searxng_api_key`），通过 nginx 反代注入。
 
 ---
