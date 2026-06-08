@@ -5,7 +5,7 @@
 Linglong Scout 是**信息采集 Agent**，负责搜索、RSS 抓取、LLM 摘要生成。
 
 ```
-SearXNG/RSS → Scout（采集+摘要）→ 返回给对话 → 用户决定是否写入知识库
+RSS/GitHub → Scout（采集+摘要）→ 返回给对话 → 用户决定是否写入知识库
 ```
 
 ## 架构规则

@@ -1,6 +1,6 @@
 # Scout 设计总览
 
-> 创建日期：2026-05-25 | 最后更新：2026-06-03 | 状态：已实现（v2.13）
+> 创建日期：2026-05-25 | 最后更新：2026-06-08 | 状态：已实现（v2.14）
 > 先读 [Scout README](../README.md) 了解项目定位和快速上手，本文件是设计层深入文档。
 
 ---
@@ -38,7 +38,6 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | 编号 | 决策 | 选择 | 原因 | 替代方案 |
 |------|------|------|------|----------|
 | GD-01 | LLM 调用模式 | 单次 Agent prompt | v1.x 流水线 JSON 解析频繁失败 | 多次 LLM 调用流水线 |
-| GD-02 | 搜索后端 | 自建 SearXNG | 完全控制搜索结果和隐私 | Google API / Bing API |
 | GD-03 | GitHub Trending | 三级 fallback | 单源不可靠 | 单一数据源 |
 | GD-04 | 并发策略 | asyncio.gather + Semaphore | 数据采集并发 ~3s | 串行拉取 |
 | GD-05 | 缓存机制 | Redis 日内缓存 + 文件冷存储 | 0.2ms vs 83s，避免重复 LLM 调用 | 无缓存 / 纯文件缓存 |
@@ -60,7 +59,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 
 ### 3. 并发优先
 
-三路数据源（SearXNG / GitHub / RSS）并发拉取，内部 Semaphore 限流保护上游服务。
+两路数据源（GitHub / RSS）并发拉取，内部 Semaphore 限流保护上游服务。
 
 ### 4. 可外部化配置
 
@@ -86,7 +85,8 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | v2.10 | 内部质量优化 | LLM async + Anthropic system 参数 + domain exceptions + 优雅退出 + pip-compile + tools 去重 |
 | v2.11 | RSS-first 采集策略 | SearXNG 关键词从 63 精简到 17（仅实体级精准查询），RSS 为主力 + OpenGithubs 描述修复 + GITHUB_TOKEN 环境变量 |
 | v2.12 | 早报 prompt 紧凑格式 + pre-generate brief + githooks 管理 | prompt 段落标题嵌入格式标签；scheduler 采集后预生成早报避免 MCP 超时；doc-check pre-push 阻塞模式；.githooks 统一 hook 管理 |
-| v2.13 | All-in-One Docker Compose + RSSHub 配置独立化 | Redis/RSSHub/SearXNG 合并到统一 docker-compose；Docker 内部网络替代 nginx 反代；rsshub_url + route 字段替代 :1200 硬编码 |
+| v2.13 | All-in-One Docker Compose + RSSHub 配置独立化 | Redis/RSSHub 合并到统一 docker-compose；Docker 内部网络替代 nginx 反代；rsshub_url + route 字段替代 :1200 硬编码 |
+| v2.14 | 移除 SearXNG | SearXNG 完全移除，数据源精简为 RSS（18 源）+ GitHub Trending 两路并发；package 仅 name + topic；配置移除 searxng_url/searxng_api_key/search_timeout/search_queries |
 
 ---
 
@@ -95,7 +95,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | 方案 | 放弃原因 | 替代方案 |
 |------|----------|----------|
 | 多次 LLM 调用流水线 | JSON 解析频繁失败 | 单次 Agent prompt |
-| 串行数据拉取 | 63 次宽泛查询 ~57s | RSS-first：RSS 主力 + 17 次精准 SearXNG 并发 ~3s |
+| 串行数据拉取 | RSS 串行拉取慢 | RSS + GitHub 两路并发 ~3s |
 | company_snapshot 内嵌代码包 | 不灵活，改了要重新部署 | Redis hash 存储 |
 | MCP 仅 stdio 模式 | 无法远程部署 | 双模式 stdio + streamable-http |
 
@@ -105,11 +105,11 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 
 | # | 维度 | 典型内容 | 数据源 |
 |---|------|---------|--------|
-| 1 | 关键人物 | 观点/言论/人事变动/个体成就 | SearXNG + RSS |
-| 2 | 行业要闻 | 公司战略、重大产品发布、超级个体/OPC | SearXNG + RSS |
+| 1 | 关键人物 | 观点/言论/人事变动/个体成就 | RSS |
+| 2 | 行业要闻 | 公司战略、重大产品发布、超级个体/OPC | RSS |
 | 3 | 学术前沿 | 重大论文、架构创新、训练范式突破 | arXiv RSS + Hugging Face Blog |
-| 4 | 融资动态 | 融资事件、IPO、估值变动 | SearXNG + RSS |
-| 5 | 政策动态 | AI 监管、产业政策 | SearXNG + RSS |
+| 4 | 融资动态 | 融资事件、IPO、估值变动 | RSS |
+| 5 | 政策动态 | AI 监管、产业政策 | RSS |
 | 6 | 开源趋势 | AI 新项目 Stars 增长 | OpenGithubs（日增长 TOP 8） |
 
 ---
@@ -119,7 +119,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | 组件 | 路径 | 说明 |
 |------|------|------|
 | `IngestAgent` | `src/linglong/scout/agent.py` | LLM Agent：格式化 → LLM → markdown |
-| `Collect` | `src/linglong/scout/collect.py` | 三路并发数据采集（SearXNG / GitHub / RSS） |
+| `Collect` | `src/linglong/scout/collect.py` | 两路并发数据采集（GitHub / RSS） |
 | `Scheduler` | `src/linglong/scout/scheduler.py` | 容器内自动采集调度（asyncio 后台任务） |
 | `RawStore` | `src/linglong/scout/raw_store.py` | 结构化原始数据存储（Redis 热 + JSON 文件冷） |
 | `BriefHistory` | `src/linglong/scout/brief_history.py` | 按维度跨天去重 + 重叠检测 + fallback |
@@ -138,8 +138,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 
 | 配置 | 路径 | 说明 |
 |------|------|------|
-| RSS 源 | `ingest.rss_sources` | 11 个订阅源 |
-| 搜索关键词 | `ingest.packages[].search_queries` | 关键词组 |
+| RSS 源 | `ingest.rss_sources` | 18 个订阅源 |
 | RSSHub URL | `ingest.rsshub_url` | RSSHub instance base URL (route-type sources auto-prepend this) |
 | 去重窗口 | `ingest.dedup_windows` | 各维度回看天数 |
 | 缓存 | `mcp.redis_url` | Redis 连接地址 |

@@ -7,6 +7,7 @@
 
 | 日期 | 主题 | 关键结论 |
 |------|------|----------|
+| 2026-06-08 | SearXNG 完全移除 + 文档清理 | 48 条早报零引用 SearXNG；采集从三路改为两路（RSS+GitHub）；删除 search_web 工具（7→6）；6 规则文件 + 8 文档文件引用清理 |
 | 2026-06-05 | 早报 prompt 优化 + OpenClaw MCP 排查 | 开源趋势改为日榜 TOP 8（解决日/周/月混排+数字幻觉）；关键人物/行业要闻增加来源溯源列；OpenClaw MCP 连接失败定位为客户端 streamable-http 支持问题 |
 | 2026-06-04 | README 全流程验证 + 维度名统一 + OpenGithubs 修复 + 配置重构 | 临时目录端到端验证；.env.example + SearXNG 默认配置；pydantic extra=ignore；OpenGithubs 列目录+seen 去重（2→8 条）；journal-check 日期 bug；${VAR:-default} 替代 _apply_env_overrides 硬编码映射 |
 | 2026-06-03 | v2.14 强制鉴权 + 早报维度合并 + Docker 合并 + README 重构 | HTTP 强制 auth_token + init 命令；早报 6 维度合并为 5（行业要闻+精选限流）；Docker Compose 四合一；移除 search_web（7→6 工具）；超级个体/OPC 关键词 |

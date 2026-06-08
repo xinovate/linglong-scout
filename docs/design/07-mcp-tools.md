@@ -1,6 +1,6 @@
 # D-07 MCP 工具参考
 
-> 状态：✅ 已实现 | 最后更新：2026-05-29 | 依赖：[D-06 MCP 接入](06-mcp.md)
+> 状态：✅ 已实现 | 最后更新：2026-06-08 | 依赖：[D-06 MCP 接入](06-mcp.md)
 > 本文件是 [D-06 MCP 接入](06-mcp.md) 的工具参数补充。部署和认证详见 D-06。
 
 ---
@@ -122,7 +122,7 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 | 参数 | 类型 | 必选 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `target_date` | string | 否 | 今天 | ISO 日期，如 `"2026-05-28"` |
-| `source` | string | 否 | `null` | 按源过滤：`"searxng"` / `"rss"` / `"github"` |
+| `source` | string | 否 | `null` | 按源过滤：`"rss"` / `"github"` |
 
 ### 请求示例
 
@@ -143,7 +143,6 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
   "date": "2026-05-28",
   "meta": {
     "fetched_at": "2026-05-28T06:55:00Z",
-    "searxng_count": 160,
     "rss_count": 85,
     "github_count": 11,
     "github_source": "trending"
@@ -241,9 +240,7 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 | 参数 | 类型 | 必选 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `topic` | string | 是 | — | 早报主题，如 `"AI 早报"` |
-| `keywords` | string[] | 否 | `null` | SearXNG 搜索关键词，空则跳过搜索 |
 | `name` | string | 否 | `"custom-brief"` | 包名标识 |
-| `max_results` | int | 否 | 5 | 每个关键词返回结果上限 |
 
 ### 请求示例
 
@@ -251,9 +248,7 @@ RSSHub URL（包含 `:1200`）会自动追加 `ACCESS_KEY`。
 {
   "name": "execute_package",
   "arguments": {
-    "topic": "AI 早报",
-    "keywords": ["OpenAI news", "Claude AI update"],
-    "max_results": 5
+    "topic": "AI 早报"
   }
 }
 ```
@@ -340,5 +335,5 @@ MCP server 启动时自动拉起后台采集调度器（纯 asyncio），无需�
 | RSS feed 解析失败 | `fetch_rss failed: ...` |
 | 无 raw 数据 | 返回 `warning` 字段，非 error |
 | feedback 值非法 | `feedback must be 'useful' or 'not_interested'` |
-| source 参数非法 | `Invalid source 'xxx'. Use: searxng, rss, github` |
+| source 参数非法 | `Invalid source 'xxx'. Use: rss, github` |
 | 无配置包 | `No packages configured in .scout.yml` |

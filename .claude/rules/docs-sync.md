@@ -53,9 +53,9 @@
 
 架构文档应包含：
 - 模块依赖图（哪个模块导入哪个）
-- 数据流图：SearXNG/RSS → Scout → 对话
+- 数据流图：RSS/GitHub → Scout → 对话
 - MCP 路由图：远程（ingest）vs 本地（ingest）
-- 部署架构：Cloudflare Tunnel → MCP Server → SearXNG/RSS/LLM
+- 部署架构：Cloudflare Tunnel → MCP Server → RSS/GitHub/LLM
 
 图用 Mermaid 代码块或 ASCII art，必须与代码保持同步。
 

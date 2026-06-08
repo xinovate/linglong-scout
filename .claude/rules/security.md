@@ -9,7 +9,7 @@
 
 ## API Key 管理
 
-- 所有第三方服务密钥（智谱、SearXNG、RSSHub、Embedding）从环境变量加载
+- 所有第三方服务密钥（LLM、RSSHub、Embedding）从环境变量加载
 - systemd 服务文件用 `Environment=` 指令，不在 Python 源码中硬编码
 - 本地开发：密钥可放 `.scout.yml`（已 gitignore）或环境变量
 - 密钥轮换：Redis 中的 Token 支持写入新值后删除旧值，无停机切换
@@ -23,7 +23,6 @@
 
 ## 网络安全
 
-- SearXNG：nginx 反向代理 + API Key 校验
 - RSSHub：`ACCESS_KEY` 参数保护
 - MCP 服务：绑定 `127.0.0.1`，外部通过 nginx 反代或 Cloudflare Tunnel 访问
 - 所有外部 HTTP 调用必须设置超时（连接超时 + 读取超时）

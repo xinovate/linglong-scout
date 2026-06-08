@@ -1,6 +1,6 @@
 # D-03 去重机制
 
-> 状态：✅ 已实现 | 最后更新：2026-05-26 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
+> 状态：✅ 已实现 | 最后更新：2026-06-08 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
 > 属于 [D-00 设计总览](00-overview.md) 的质量层子设计。
 
 ---
@@ -18,9 +18,7 @@ flowchart TD
     START([数据采集完成]) --> URL_DEDUP
 
     subgraph URL_DEDUP["第一层：URL 级去重"]
-        U1["SearXNG 内部去重<br/>seen_urls 集合"]
-        U2["RSS 内部去重<br/>seen_urls 集合"]
-        U3["交叉去重<br/>RSS 排除 SearXNG 已有 URL"]
+        U1["RSS 内部去重<br/>seen_urls 集合"]
     end
 
     URL_DEDUP --> BH_LOAD
@@ -49,9 +47,7 @@ flowchart TD
 
 | 层级 | 范围 | 方法 | 实现 |
 |------|------|------|------|
-| SearXNG 内部 | URL 级 | `seen_urls` 集合 | agent.py |
 | RSS 内部 | URL 级 | `seen_urls` 集合 | agent.py |
-| SearXNG ↔ RSS 交叉 | URL 级 | RSS 排除 SearXNG 已出现的 URL | agent.py |
 | BriefHistory 跨天 | 语义级 | 历史输出注入 prompt，LLM 判断 + 去重注释 | brief_history.py |
 
 ---

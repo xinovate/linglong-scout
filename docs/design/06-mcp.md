@@ -1,6 +1,6 @@
 # D-06 MCP 接入
 
-> 状态：✅ 已实现 | 最后更新：2026-05-29 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
+> 状态：✅ 已实现 | 最后更新：2026-06-08 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
 > 属于 [D-00 设计总览](00-overview.md) 的接入层子设计。工具参数详见 [D-07 MCP 工具参考](07-mcp-tools.md)。
 
 ---
@@ -66,7 +66,7 @@ sequenceDiagram
 |------|------|
 | `generate_brief()` | 生成 AI 早报（缓存按用户隔离） |
 | `fetch_raw(target_date, source)` | 获取结构化原始数据（Redis → fallback 文件） |
-| `execute_package(topic, keywords)` | 自定义参数执行采集+生成 |
+| `execute_package(topic, name)` | 自定义参数执行采集+生成 |
 | `fetch_github_trending(daily, weekly, monthly)` | GitHub 趋势项目（三级 fallback） |
 | `fetch_rss(url, name?, max_items?)` | 采集单个 RSS feed |
 | `record_feedback(content_hash, feedback, tags)` | 记录用户偏好 |
@@ -85,14 +85,13 @@ graph LR
     subgraph 远程["streamable-http 模式（服务器）"]
         OC2["OpenClaw"] -->|HTTP + Bearer Token| NGINX["Nginx (可选)"]
         NGINX --> MCP2["linglong.mcp :9900<br/>TokenAuthMiddleware"]
-        MCP2 --> SEARXNG["SearXNG"]
         MCP2 --> LLM["LLM API"]
     end
 ```
 
 ### Docker 部署
 
-所有服务（scout + redis + rsshub + searxng）运行在统一的 `docker-compose.yml` 中，通过 Docker 内部网络 `scout-net` 互联。
+所有服务（scout + redis + rsshub）运行在统一的 `docker-compose.yml` 中，通过 Docker 内部网络 `scout-net` 互联。
 
 ```mermaid
 graph LR
@@ -100,15 +99,13 @@ graph LR
     CF --> Scout[linglong-scout :9900]
     Scout -->|scout-net| Redis[linglong-redis :6379]
     Scout -->|scout-net| RSSHub[linglong-rsshub :1200]
-    Scout -->|scout-net| SearXNG[linglong-searxng :8080]
 ```
 
-- 4 个服务在同一个 `docker-compose.yml` 中，Docker 内部网络 `scout-net` 互联
-- Scout 通过 Docker 服务名访问其他服务（`http://searxng:8080`、`http://rsshub:1200`、`redis://redis:6379/0`）
+- 3 个服务在同一个 `docker-compose.yml` 中，Docker 内部网络 `scout-net` 互联
+- Scout 通过 Docker 服务名访问其他服务（`http://rsshub:1200`、`redis://redis:6379/0`）
 - 仅 scout 暴露 `127.0.0.1:9900` 到主机，其余服务仅容器内可达
-- 无需 nginx 反向代理 — SearXNG 认证由网络隔离保证
-- 配置文件：`.scout.yml`、`.env`、`config/searxng/settings.yml`
-- 数据卷：`./data`（日志 + 原始数据 + Redis 持久化）、`./config/searxng/settings.yml`（SearXNG 配置）
+- 配置文件：`.scout.yml`、`.env`
+- 数据卷：`./data`（日志 + 原始数据 + Redis 持久化）
 
 ---
 
@@ -168,4 +165,4 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 | `src/linglong/cli.py` | CLI 入口：brief / collect / scout / serve |
 | `src/linglong/config.py` | 配置模型 + `setup_logging()` |
 | `Dockerfile` | Python 3.12-slim，pip install |
-| `docker-compose.yml` | All-in-One Docker Compose（scout + redis + rsshub + searxng），内部网络 scout-net |
+| `docker-compose.yml` | All-in-One Docker Compose（scout + redis + rsshub），内部网络 scout-net |

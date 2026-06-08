@@ -5,8 +5,8 @@
 - 工具按模块组织：`ingest`（仅采集相关工具）
 - 每个模块独立 FastMCP 实例，专属 HTTP 路径（`/mcp/ingest`）
 - 远程部署暴露 `ingest`，本地 stdio 同样暴露 `ingest`
-- 工具函数名必须描述性强、动词开头：`generate_brief`、`search_web`、`fetch_rss`
-- 工具名用 `snake_case`，禁止模块前缀（`ingest_search` → `search_web`），路由已隐含模块
+- 工具函数名必须描述性强、动词开头：`generate_brief`、`fetch_rss`、`fetch_raw`
+- 工具名用 `snake_case`，禁止模块前缀（`ingest_fetch` → `fetch_rss`），路由已隐含模块
 
 ## 工具函数模板
 
@@ -43,9 +43,9 @@ async def tool_name(param: str) -> dict:
 - 枚举值用 `Literal` 类型：
 
 ```python
-async def search_web(
-    query: str,
-    max_results: int = 10,
+async def fetch_rss(
+    url: str,
+    max_items: int = 20,
 ) -> dict:
 ```
 
@@ -59,8 +59,8 @@ async def search_web(
 - 描述要面向 Agent 消费者：说明何时调用此工具，而非如何实现
 
 ```
-好的描述：Searches the web via SearXNG and returns ranked results.
-坏的描述：A tool that uses the search module to query SearXNG.
+好的描述：Fetches and parses an RSS feed, returning entity previews.
+坏的描述：A tool that uses the feed module to parse RSS.
 ```
 
 ## 错误响应格式
@@ -76,7 +76,7 @@ async def search_web(
 
 ## 幂等性
 
-- 查询类工具天然幂等（`search_web`、`fetch_rss`）
+- 查询类工具天然幂等（`fetch_rss`、`fetch_raw`）
 - 写入类工具（`record_feedback`）应容忍重复调用
 - 批量操作部分失败时返回成功和失败的明细，不静默丢弃
 

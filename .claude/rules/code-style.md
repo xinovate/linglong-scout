@@ -70,7 +70,7 @@ def fetch_feed(url: str, timeout: int = 30) -> dict:
 |---------|---------|
 | `ValueError` | 调用方传入无效参数 |
 | `LookupError` | 实体/资源未找到 |
-| `RuntimeError` | 外部服务故障（LLM、SearXNG、RSS） |
+| `RuntimeError` | 外部服务故障（LLM、RSS、GitHub） |
 | `Exception` | 批处理兜底（需 `noqa: BLE001`） |
 
 - MCP 工具函数：捕获领域异常，返回结构化错误 JSON，不让原始异常泄露给客户端

@@ -1,40 +1,19 @@
 # D-01 数据源架构
 
-> 状态：✅ 已实现 | 最后更新：2026-06-05
+> 状态：✅ 已实现 | 最后更新：2026-06-08
 > 属于 [D-00 设计总览](00-overview.md) 的数据层子设计。
 
 ---
 
 ## 概述
 
-Scout 采用 **RSS 为主力、SearXNG 为精准补充** 的采集策略。三路通过 `asyncio.gather` 并行拉取。
+Scout 采用 **RSS 为主力、GitHub Trending 为开源趋势补充** 的采集策略。两路通过 `asyncio.gather` 并行拉取。
 
 ```
 IngestAgent.run()
-  ├── _fetch_rss_feeds()         RSS 15 源（主力，含学术前沿 arXiv 3 源 + HF Blog） Semaphore(3) 并发
-  ├── _search_all_keywords()     SearXNG 17 次精准查询（补充） Semaphore(5) 并发
+  ├── _fetch_rss_feeds()         RSS 18 源（主力，含学术前沿 arXiv 3 源 + HF Blog） Semaphore(3) 并发
   └── _github_trending()         GitHub Trending 日/周/月三级 fallback
 ```
-
----
-
-## SearXNG 搜索（精准补充）
-
-**后端**：自建 SearXNG 实例
-
-**策略**：只保留实体级精准查询（具体人名/公司名/产品名），宽泛主题查询由 RSS 覆盖。
-
-**关键词分组**（17 个，分 3 组）：
-
-| 组 | 定位 | 关键词数 | max_results |
-|---|------|---------|-------------|
-| 1 | 关键人物 | 8 | 2 |
-| 2 | 公司/产品 | 6 | 2 |
-| 3 | 应用/技术 | 3 | 2 |
-
-**并发策略**：`asyncio.Semaphore(5)`，17 次查询并发执行。
-
-**认证**：Bearer Token（`searxng_api_key`），通过 nginx 反代注入。
 
 ---
 
@@ -52,7 +31,7 @@ IngestAgent.run()
 
 ---
 
-## RSS 订阅源（15 源，信息主力）
+## RSS 订阅源（18 源，信息主力）
 
 | 源 | 类型 | 条目/次 | 维度覆盖 |
 |---|------|---------|---------|
@@ -75,7 +54,7 @@ IngestAgent.run()
 | 工信部文件公示 | RSSHub (gov) | ~15 | 政策动态 |
 | 发改委新闻动态 | RSSHub (gov) | ~25 | 政策动态 |
 
-**并发策略**：`asyncio.Semaphore(3)`，15 源并发拉取。
+**并发策略**：`asyncio.Semaphore(3)`，18 源并发拉取。
 
 **RSSHub 认证**：源定义中带 `route` 字段的，采集时自动在前面拼接 `rsshub_url` 配置值，并注入 `access_key` 参数；带 `url` 字段的直接使用原 URL，不做拼接。
 
@@ -85,10 +64,9 @@ IngestAgent.run()
 
 | 阶段 | 串行 | 并发 |
 |------|------|------|
-| SearXNG 17 次查询 | ~15s | ~3s |
-| GitHub | ~2s | ~2s（与 SearXNG 并行） |
-| RSS 15 源 | ~10s | ~3s（并行） |
-| **数据采集总耗时** | **~27s** | **~3s** |
+| GitHub | ~2s | ~2s |
+| RSS 18 源 | ~10s | ~3s（与 GitHub 并行） |
+| **数据采集总耗时** | **~12s** | **~3s** |
 
 ---
 
@@ -96,5 +74,5 @@ IngestAgent.run()
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong/scout/collect.py` | `_search_all_keywords()` / `_github_trending()` / `fetch_single_feed()` / `_fetch_rss_feeds()` |
-| `.scout.yml` | RSS 源列表、搜索关键词、SearXNG/RSSHub 配置 |
+| `src/linglong/scout/collect.py` | `_github_trending()` / `fetch_single_feed()` / `_fetch_rss_feeds()` |
+| `.scout.yml` | RSS 源列表、RSSHub 配置 |
