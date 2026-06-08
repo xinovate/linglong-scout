@@ -15,8 +15,6 @@ def _make_config(**overrides) -> ScoutConfig:
             "packages": [{
                 "name": "test",
                 "topic": "AI",
-                "output": {"format": "morning-brief"},
-                "search_queries": [{"keywords": ["test"], "max_results": 5, "max_age_days": 3}],
             }],
             "dedup_windows": {"test": 7},
         },
@@ -83,7 +81,7 @@ class TestCmdBrief:
              patch("linglong.scout.feedback.FeedbackStore"), \
              patch("linglong.scout.brief_history.BriefHistory"), \
              patch("linglong.scout.raw_store.has_raw", return_value=True), \
-             patch("linglong.scout.raw_store.get_raw", return_value={"searxng": [], "github": [], "rss": []}), \
+             patch("linglong.scout.raw_store.get_raw", return_value={"github": [], "rss": []}), \
              patch("linglong.scout.raw_store.get_raw_meta", return_value={"github_source": ""}), \
              patch("linglong.config.setup_logging"):
             cmd_brief(_make_args())
@@ -180,11 +178,11 @@ class TestCmdCollect:
     def test_collects_and_stores(self, capsys):
         config = _make_config()
 
-        mock_raw = {"searxng": [{"title": "T"}], "github": [], "rss": [], "github_source": ""}
+        mock_raw = {"github": [], "rss": [{"title": "T"}], "github_source": ""}
 
         with patch("linglong.config.get_config", return_value=config), \
              patch("linglong.scout.collect.collect", new_callable=AsyncMock, return_value=mock_raw), \
-             patch("linglong.scout.raw_store.store_raw", return_value={"searxng": 1, "github": 0, "rss": 0}) as mock_store, \
+             patch("linglong.scout.raw_store.store_raw", return_value={"github": 0, "rss": 1}) as mock_store, \
              patch("linglong.config.setup_logging"):
             cmd_collect(_make_args())
 

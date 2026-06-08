@@ -9,27 +9,12 @@ import pytest
 from linglong.scout.raw_store import (
     _normalize_github,
     _normalize_rss,
-    _normalize_searxng,
     cleanup_raw,
     get_raw,
     get_raw_meta,
     has_raw,
     store_raw,
 )
-
-
-class TestNormalizeSearxng:
-    def test_basic_mapping(self):
-        items = [{"title": "OpenAI news", "url": "https://example.com/1", "snippet": "summary"}]
-        result = _normalize_searxng(items, "2026-05-28T06:55:00Z")
-        assert len(result) == 1
-        assert result[0]["source"] == "searxng"
-        assert result[0]["title"] == "OpenAI news"
-        assert result[0]["fetched_at"] == "2026-05-28T06:55:00Z"
-        assert result[0]["extra"]["query"] == ""
-
-    def test_empty_list(self):
-        assert _normalize_searxng([], "t") == []
 
 
 class TestNormalizeGithub:
@@ -126,24 +111,24 @@ def tmp_raw_dir(tmp_path):
 class TestStoreRaw:
     def test_stores_to_redis(self, mock_redis, tmp_raw_dir):
         _, str_store, _ = mock_redis
-        searxng = [{"title": "test", "url": "https://example.com", "snippet": "s"}]
+        github = [{"title": "test", "url": "https://github.com/r1", "snippet": "s",
+                    "stars": "100", "growth": "50", "period": "日增长"}]
         counts = store_raw(
             target_date="2026-05-28",
-            searxng=searxng,
-            github=[],
+            github=github,
             rss=[],
         )
-        assert counts["searxng"] == 1
-        assert counts["github"] == 0
-        key = "scout:raw:2026-05-28:searxng"
+        assert counts["github"] == 1
+        key = "scout:raw:2026-05-28:github"
         assert key in str_store
         data = json.loads(str_store[key])
         assert len(data) == 1
-        assert data[0]["source"] == "searxng"
+        assert data[0]["source"] == "github"
 
     def test_stores_to_file(self, mock_redis, tmp_raw_dir):
-        store_raw(target_date="2026-05-28", searxng=[{"title": "t", "url": "u", "snippet": "s"}])
-        path = tmp_raw_dir / "2026-05-28_searxng.json"
+        store_raw(target_date="2026-05-28", github=[{"title": "t", "url": "u", "snippet": "s",
+                                                       "stars": "100", "growth": "50", "period": "日增长"}])
+        path = tmp_raw_dir / "2026-05-28_github.json"
         assert path.exists()
         data = json.loads(path.read_text())
         assert len(data) == 1
@@ -156,19 +141,19 @@ class TestStoreRaw:
         assert meta_file.exists()
 
     def test_skips_none_sources(self, mock_redis, tmp_raw_dir):
-        counts = store_raw(target_date="2026-05-28", searxng=[{"title": "t", "url": "u", "snippet": "s"}])
-        assert "github" not in counts
+        counts = store_raw(target_date="2026-05-28", github=[{"title": "t", "url": "u", "snippet": "s",
+                                                                "stars": "100", "growth": "50", "period": "日增长"}])
         assert "rss" not in counts
 
 
 class TestGetRaw:
     def test_reads_from_redis(self, mock_redis, tmp_raw_dir):
         _, str_store, _ = mock_redis
-        str_store["scout:raw:2026-05-28:searxng"] = json.dumps([
-            {"title": "test", "url": "u", "snippet": "s", "source": "searxng", "fetched_at": "t", "extra": {}},
+        str_store["scout:raw:2026-05-28:github"] = json.dumps([
+            {"title": "test", "url": "u", "snippet": "s", "source": "github", "fetched_at": "t", "extra": {}},
         ])
         data = get_raw(target_date="2026-05-28")
-        assert len(data["searxng"]) == 1
+        assert len(data["github"]) == 1
 
     def test_falls_back_to_file(self, mock_redis, tmp_raw_dir):
         path = tmp_raw_dir / "2026-05-28_rss.json"
@@ -181,23 +166,22 @@ class TestGetRaw:
 
     def test_returns_empty_for_missing(self, mock_redis, tmp_raw_dir):
         data = get_raw(target_date="2026-05-28")
-        assert data["searxng"] == []
         assert data["rss"] == []
         assert data["github"] == []
 
     def test_filters_by_source(self, mock_redis, tmp_raw_dir):
         _, str_store, _ = mock_redis
-        str_store["scout:raw:2026-05-28:searxng"] = json.dumps([{"title": "s"}])
+        str_store["scout:raw:2026-05-28:github"] = json.dumps([{"title": "g"}])
         str_store["scout:raw:2026-05-28:rss"] = json.dumps([{"title": "r"}])
-        data = get_raw(target_date="2026-05-28", source="searxng")
-        assert "searxng" in data
+        data = get_raw(target_date="2026-05-28", source="github")
+        assert "github" in data
         assert "rss" not in data
 
 
 class TestHasRaw:
     def test_true_when_redis_has_data(self, mock_redis, tmp_raw_dir):
         _, str_store, _ = mock_redis
-        str_store["scout:raw:2026-05-28:searxng"] = "data"
+        str_store["scout:raw:2026-05-28:github"] = "data"
         assert has_raw("2026-05-28") is True
 
     def test_true_when_file_exists(self, mock_redis, tmp_raw_dir):
@@ -227,6 +211,6 @@ class TestCleanupRaw:
     def test_removes_old_keys(self, mock_redis, tmp_raw_dir):
         _, str_store, _ = mock_redis
         old_date = (date.today() - __import__("datetime").timedelta(days=15)).isoformat()
-        str_store[f"scout:raw:{old_date}:searxng"] = "old data"
+        str_store[f"scout:raw:{old_date}:github"] = "old data"
         removed = cleanup_raw()
         assert removed == 1

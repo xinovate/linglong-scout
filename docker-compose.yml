@@ -1,5 +1,5 @@
 # Linglong Scout — All-in-One Docker Compose
-# Scout + Redis + RSSHub + SearXNG
+# Scout + Redis + RSSHub
 #
 # 使用：
 #   docker compose up -d
@@ -19,7 +19,6 @@ services:
       # Docker-specific overrides (internal network service names)
       - LL_SCOUT_MCP_TRANSPORT=streamable-http
       - LL_SCOUT_MCP_HOST=0.0.0.0
-      - LL_INGEST_SEARXNG_URL=http://searxng:8080
       - LL_INGEST_RSSHUB_URL=http://rsshub:1200
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis}@redis:6379/0
     env_file: .env
@@ -60,18 +59,6 @@ services:
       - ACCESS_KEY=${RSSHUB_ACCESS_KEY}
       - NODE_ENV=production
       - TZ=Asia/Shanghai
-    networks:
-      - scout-net
-
-  searxng:
-    image: searxng/searxng:latest
-    container_name: linglong-searxng
-    restart: unless-stopped
-    volumes:
-      - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
-    environment:
-      - TZ=Asia/Shanghai
-      - SEARXNG_BASE_URL=http://searxng:8080/
     networks:
       - scout-net
 

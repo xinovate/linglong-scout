@@ -10,4 +10,4 @@ class LLMError(ScoutError):
 
 
 class SourceError(ScoutError):
-    """External data source failure (SearXNG, RSS, GitHub)."""
+    """External data source failure (RSS, GitHub)."""

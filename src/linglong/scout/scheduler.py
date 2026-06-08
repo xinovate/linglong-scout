@@ -10,7 +10,6 @@ import logging
 from datetime import date, datetime, timedelta
 
 from linglong.config import get_config
-from linglong.scout.package import SourcePackage
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +50,7 @@ async def _run_collect() -> None:
     from linglong.scout.agent import IngestAgent
     from linglong.scout.cache import set_brief
     from linglong.scout.collect import collect as collect_data
+    from linglong.scout.package import SourcePackage
     from linglong.scout.raw_store import store_raw
 
     config = get_config()
@@ -62,10 +62,9 @@ async def _run_collect() -> None:
     today = date.today().isoformat()
 
     try:
-        raw = await collect_data(package)
+        raw = await collect_data()
         counts = store_raw(
             target_date=today,
-            searxng=raw["searxng"],
             github=raw["github"],
             rss=raw["rss"],
             github_source=raw["github_source"],

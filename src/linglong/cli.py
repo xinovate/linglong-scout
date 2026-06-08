@@ -49,7 +49,6 @@ def cmd_brief(args) -> None:
         raw_data = get_raw(today)
         meta = get_raw_meta(today)
         raw = {
-            "searxng": raw_data.get("searxng", []),
             "github": raw_data.get("github", []),
             "github_source": meta.get("github_source", ""),
             "rss": raw_data.get("rss", []),
@@ -107,12 +106,11 @@ def cmd_collect(args) -> None:
 
     package = SourcePackage(**config.ingest.packages[0])
     from linglong.scout.collect import collect as collect_data
-    raw = asyncio.run(collect_data(package))
+    raw = asyncio.run(collect_data())
 
     today = date.today().isoformat()
     counts = store_raw(
         target_date=today,
-        searxng=raw["searxng"],
         github=raw["github"],
         rss=raw["rss"],
         github_source=raw["github_source"],

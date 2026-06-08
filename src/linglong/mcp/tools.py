@@ -103,36 +103,26 @@ async def record_feedback(
 
 async def execute_package(
     topic: str,
-    keywords: list[str] | None = None,
     name: str = "custom-brief",
-    max_results: int = 5,
 ) -> str:
     """Execute a custom scout package with given parameters.
 
-    Collects data from SearXNG, GitHub trending, and RSS feeds based on
-    keywords, then generates a structured brief via LLM.
+    Collects data from GitHub trending and RSS feeds,
+    then generates a structured brief via LLM.
 
     Args:
         topic: Brief topic, e.g. "AI 早报" or "开源周刊".
-        keywords: Search keywords for SearXNG. If empty, skips web search.
         name: Package name identifier.
-        max_results: Max results per keyword.
     """
     try:
         from linglong.scout.agent import IngestAgent
         from linglong.scout.brief_history import BriefHistory
         from linglong.scout.feedback import FeedbackStore
-        from linglong.scout.package import SearchQueryConfig, SourcePackage
+        from linglong.scout.package import SourcePackage
 
         package = SourcePackage(
             name=name,
             topic=topic,
-            search_queries=[
-                SearchQueryConfig(
-                    keywords=keywords or [],
-                    max_results=max_results,
-                ),
-            ] if keywords else [],
         )
 
         config = get_config()
@@ -198,7 +188,6 @@ async def generate_brief() -> str:
             raw_data = get_raw(today)
             meta = get_raw_meta(today)
             raw = {
-                "searxng": raw_data.get("searxng", []),
                 "github": raw_data.get("github", []),
                 "github_source": meta.get("github_source", ""),
                 "rss": raw_data.get("rss", []),
@@ -223,36 +212,15 @@ async def generate_brief() -> str:
         return json.dumps({"error": str(exc)}, ensure_ascii=False)
 
 
-async def search_web(query: str, max_results: int = 10) -> str:
-    """Search the web via SearXNG. Returns results including web page title, web page URL, web page summary, website name, website icon, etc."""
-    try:
-        from linglong.scout.collect import _searxng_search
-
-        results = await _searxng_search(query, max_results=max_results)
-        formatted = []
-        for r in results:
-            formatted.append({
-                "title": r.get("title", ""),
-                "url": r.get("url", ""),
-                "snippet": r.get("snippet", ""),
-                "engine": "",
-            })
-        return json.dumps({"results": formatted, "count": len(formatted)}, ensure_ascii=False)
-    except Exception as exc:
-        logger.exception("search_web failed")
-        return json.dumps({"error": str(exc)}, ensure_ascii=False)
-
-
 async def fetch_raw(target_date: str | None = None, source: str | None = None) -> str:
     """Fetch structured raw data collected for a given date.
 
-    Returns raw collected data (SearXNG search results, GitHub trending,
-    RSS items) as structured JSON. Useful for inspecting data before
-    brief generation or for custom analysis.
+    Returns raw collected data (GitHub trending, RSS items) as structured JSON.
+    Useful for inspecting data before brief generation or for custom analysis.
 
     Args:
         target_date: ISO date string (e.g. "2026-05-28"). Defaults to today.
-        source: Filter to a specific source: "searxng", "rss", or "github".
+        source: Filter to a specific source: "rss" or "github".
     """
     try:
         from datetime import date
@@ -261,9 +229,9 @@ async def fetch_raw(target_date: str | None = None, source: str | None = None) -
 
         d = target_date or date.today().isoformat()
 
-        if source and source not in ("searxng", "rss", "github"):
+        if source and source not in ("rss", "github"):
             return json.dumps(
-                {"error": f"Invalid source '{source}'. Use: searxng, rss, github"},
+                {"error": f"Invalid source '{source}'. Use: rss, github"},
                 ensure_ascii=False,
             )
 

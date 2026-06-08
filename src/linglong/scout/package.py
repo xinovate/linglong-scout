@@ -3,14 +3,7 @@
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, Field
-
-
-class SearchQueryConfig(BaseModel):
-    """Flat search query (no preset dimension)."""
-
-    keywords: list[str] = Field(default_factory=list)
-    max_results: int = 5
+from pydantic import BaseModel
 
 
 class SourcePackage(BaseModel):
@@ -18,7 +11,6 @@ class SourcePackage(BaseModel):
 
     name: str
     topic: str
-    search_queries: list[SearchQueryConfig] = Field(default_factory=list)
 
     model_config = {"extra": "ignore"}
 

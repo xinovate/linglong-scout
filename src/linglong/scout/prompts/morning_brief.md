@@ -66,7 +66,7 @@
 
 ━━━━━━━━━━━━━━━━━━━━
 
-📌 数据来源：SearXNG + OpenGithubs + RSS（AIHOT/36氪/量子位/The Rundown AI/TechCrunch/The Verge/VentureBeat/SyncedReview/EU AI Act/arXiv/HuggingFace/工信部/发改委/华尔街见闻/财新网/36氪快讯）
+📌 数据来源：OpenGithubs + RSS（AIHOT/36氪/量子位/The Rundown AI/TechCrunch/The Verge/VentureBeat/SyncedReview/EU AI Act/arXiv/HuggingFace/工信部/发改委/华尔街见闻/财新网/36氪快讯）
 
 ## 格式要求（最高优先级）
 
@@ -90,8 +90,8 @@
 9. **关键人物覆盖**：Yann LeCun、Geoffrey Hinton、Andrej Karpathy、Ilya Sutskever、Sam Altman、Dario Amodei、Jensen Huang、何恺明、李飞飞、Andrew Ng、Harrison Chase、Lilian Weng、Jim Fan、Demis Hassabis、梁文锋、周靖人、戴文渊、王小川、李开复、朱啸虎等
 10. **行业要闻覆盖**：OpenAI、Anthropic、Google、Meta、xAI；DeepSeek、Kimi（月之暗面）、智谱AI、MiniMax、字节（豆包）、阿里（通义）、腾讯（混元）
 11. **Top 5 评选**：影响范围广、战略意义大、技术突破性强；每条 4 维度分析（公司/战略/技术/启示）
-12. **RSS 数据为信息主力**：RSS 区来自专业媒体订阅源，经编辑筛选，是本报告的主要信息来源。SearXNG 仅为补充。优先使用 RSS 数据，标注来源媒体
-13. **来源溯源**：所有维度的每条新闻都必须标注来源链接，格式 `— [媒体名](url)`（列表类）或 `[媒体名](url)` 列（表格类）。从原始数据（RSS 的 link 字段、SearXNG 的 url 字段）中提取真实 URL。如果原始数据中提取不到真实 URL，则只写媒体名不加超链（如 `36氪`）。禁止编造 URL
+12. **RSS 数据为信息主力**：RSS 区来自专业媒体订阅源，经编辑筛选，是本报告的主要信息来源。优先使用 RSS 数据，标注来源媒体
+13. **来源溯源**：所有维度的每条新闻都必须标注来源链接，格式 `— [媒体名](url)`（列表类）或 `[媒体名](url)` 列（表格类）。从原始数据（RSS 的 link 字段）中提取真实 URL。如果原始数据中提取不到真实 URL，则只写媒体名不加超链（如 `36氪`）。禁止编造 URL
 14. **日期使用今天**：{date}
 15. **只输出 markdown**，不要其他内容
 16. **避免重复播报**：如果"近期已播报"区列出了某事件，不再报道，除非有重要新进展
@@ -99,8 +99,6 @@
 {history_section}
 
 ## 搜索结果
-
-{search_results}
 
 {github_data}
 

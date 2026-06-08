@@ -49,16 +49,6 @@ class IngestConfig(BaseSettings):
         default_factory=list,
         description="Inline package definitions",
     )
-    searxng_url: str = Field(
-        default="http://localhost:8088",
-        description="SearXNG instance URL for JSON API search",
-    )
-    search_timeout: float = Field(
-        default=30.0, description="Search request timeout in seconds"
-    )
-    searxng_api_key: str | None = Field(
-        default=None, description="SearXNG API key (Bearer Token via nginx auth)"
-    )
     rsshub_url: str | None = Field(
         default=None, description="RSSHub instance base URL (for route-type sources)"
     )

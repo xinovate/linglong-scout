@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 _RAW_PREFIX = "scout:raw:"
 _RAW_TTL_DAYS = 14
-_SOURCES = ("searxng", "rss", "github")
+_SOURCES = ("rss", "github")
 
 
 def _raw_dir() -> Path:
@@ -30,24 +30,6 @@ def _now_iso() -> str:
 # ---------------------------------------------------------------------------
 # Normalize — convert source-specific items to unified schema
 # ---------------------------------------------------------------------------
-
-
-def _normalize_searxng(items: list[dict[str, str]], fetched_at: str) -> list[dict[str, Any]]:
-    """Convert SearXNG items to normalized schema."""
-    return [
-        {
-            "title": r.get("title", ""),
-            "url": r.get("url", ""),
-            "snippet": r.get("snippet", ""),
-            "source": "searxng",
-            "published": "",
-            "fetched_at": fetched_at,
-            "extra": {
-                "query": r.get("query", ""),
-            },
-        }
-        for r in items
-    ]
 
 
 def _normalize_github(items: list[dict[str, str]], fetched_at: str) -> list[dict[str, Any]]:
@@ -95,14 +77,13 @@ def _normalize_rss(items: list[dict[str, str]], fetched_at: str) -> list[dict[st
 
 def store_raw(
     target_date: str | None = None,
-    searxng: list[dict[str, str]] | None = None,
     github: list[dict[str, str]] | None = None,
     rss: list[dict[str, str]] | None = None,
     github_source: str = "",
 ) -> dict[str, int]:
     """Store raw data for all sources to Redis + JSON files.
 
-    Returns {"searxng": N, "github": N, "rss": N} item counts.
+    Returns {"github": N, "rss": N} item counts.
     """
     d = target_date or date.today().isoformat()
     fetched_at = _now_iso()
@@ -111,11 +92,6 @@ def store_raw(
 
     counts: dict[str, int] = {}
     data_map: dict[str, list[dict[str, Any]]] = {}
-
-    if searxng is not None:
-        normalized = _normalize_searxng(searxng, fetched_at)
-        data_map["searxng"] = normalized
-        counts["searxng"] = len(normalized)
 
     if github is not None:
         normalized = _normalize_github(github, fetched_at)
@@ -149,7 +125,6 @@ def store_raw(
     # Write meta
     meta = {
         "fetched_at": fetched_at,
-        "searxng_count": counts.get("searxng", 0),
         "rss_count": counts.get("rss", 0),
         "github_count": counts.get("github", 0),
         "github_source": github_source,
@@ -157,8 +132,8 @@ def store_raw(
     _store_meta(d, meta, ttl)
 
     logger.info(
-        "Raw data stored for %s: %d searxng, %d github, %d rss",
-        d, counts.get("searxng", 0), counts.get("github", 0), counts.get("rss", 0),
+        "Raw data stored for %s: %d github, %d rss",
+        d, counts.get("github", 0), counts.get("rss", 0),
     )
     return counts
 
@@ -196,7 +171,7 @@ def get_raw(
 ) -> dict[str, list[dict[str, Any]]]:
     """Read raw data for a date. Reads Redis first, falls back to file.
 
-    Returns {"searxng": [...], "rss": [...], "github": [...]}.
+    Returns {"rss": [...], "github": [...]}.
     Missing sources have empty lists.
     """
     d = target_date or date.today().isoformat()
@@ -284,7 +259,7 @@ def cleanup_raw() -> int:
         while True:
             cursor, keys = r.scan(cursor, match=f"{_RAW_PREFIX}*")
             for key in keys:
-                # Extract date from key like scout:raw:2026-05-28:searxng
+                # Extract date from key like scout:raw:2026-05-28:rss
                 parts = key.replace(_RAW_PREFIX, "").split(":")
                 if parts and parts[0] < cutoff:
                     r.delete(key)

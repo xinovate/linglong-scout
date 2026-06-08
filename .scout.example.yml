@@ -16,11 +16,6 @@ llm:
 
 # ── 信息采集 ──────────────────────────────────
 ingest:
-  # SearXNG 搜索服务
-  searxng_url: ${LL_INGEST_SEARXNG_URL:-http://localhost:8088}
-  searxng_api_key: ${SEARXNG_API_KEY}
-  search_timeout: 30
-
   # RSSHub 实例（可选，仅 route 类型源使用）
   rsshub_url: ${LL_INGEST_RSSHUB_URL:-http://localhost:1200}
   rsshub_access_key: ${RSSHUB_ACCESS_KEY}
@@ -104,51 +99,9 @@ ingest:
     #   route: /gov/ndrc/xwdt
 
   # 采集包定义
-  # 策略：RSS 为主力（人工编辑筛选，高信噪比），SearXNG 为实体级精准补充
   packages:
     - name: ai-morning-brief
       topic: AI 早报
-      search_queries:
-        # ── 关键人物（只留实体名查询，RSS 不覆盖的具体人物动态） ──
-        - keywords:
-            - "Karpathy AI latest 2026"
-            - "LeCun JEPA world model latest"
-            - "Ilya Sutskever SSI news 2026"
-            - "Sam Altman OpenAI latest 2026"
-            - "Dario Amodei Anthropic latest 2026"
-            - "Demis Hassabis DeepMind latest 2026"
-            - "梁文锋 DeepSeek 动态"
-            - "李飞飞 AI 最新动态 2026"
-          max_results: 2
-        # ── 公司/产品（只留具体公司名+产品名，RSS 不覆盖的独家动态） ──
-        - keywords:
-            - "Anthropic Claude latest 2026"
-            - "Google Gemini release 2026"
-            - "DeepSeek R2 最新动态 2026"
-            - "月之暗面 Kimi K2 最新动态 2026"
-            - "MiniMax 海螺AI 最新动态 2026"
-            - "字节跳动 豆包 Seedance 最新动态"
-          max_results: 2
-        # ── 应用/技术（只留具体技术名，RSS 不覆盖的新产品/新框架） ──
-        - keywords:
-            - "MCP Model Context Protocol latest 2026"
-            - "AI video generation Kling Sora 2026"
-            - "Unitree robot latest news 2026"
-          max_results: 2
-        # ── 政策补充（国际政策 RSS 覆盖有限，用 SearXNG 精准补充） ──
-        - keywords:
-            - "EU AI Act enforcement 2026"
-            - "AI copyright lawsuit 2026"
-            - "AI chip export control 2026"
-          max_results: 2
-        # ── 超级个体/一人公司（AI 赋能个体创业趋势） ──
-        - keywords:
-            - "solo founder AI company launch 2026"
-            - "one person company OPC AI 2026"
-            - "indie hacker AI product launch 2026"
-            - "一人公司 OPC AI 2026"
-            - "超级个体 AI 创业 2026"
-          max_results: 2
 
 # ── MCP Server ────────────────────────────────
 mcp:

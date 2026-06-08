@@ -34,7 +34,6 @@ class TestRunCollect:
         config.ingest.packages = [{"name": "test", "topic": "AI"}]
 
         mock_raw = {
-            "searxng": [{"title": "t", "url": "u", "snippet": "s", "source": "searxng", "fetched_at": "t", "extra": {}}],
             "github": [],
             "github_source": "opengithubs",
             "rss": [],
@@ -42,7 +41,7 @@ class TestRunCollect:
 
         with patch("linglong.scout.scheduler.get_config", return_value=config), \
              patch("linglong.scout.collect.collect", return_value=mock_raw) as mock_collect, \
-             patch("linglong.scout.raw_store.store_raw", return_value={"searxng": 1, "github": 0, "rss": 0}) as mock_store:
+             patch("linglong.scout.raw_store.store_raw", return_value={"github": 0, "rss": 0}) as mock_store:
             await _run_collect()
             mock_collect.assert_called_once()
             mock_store.assert_called_once()

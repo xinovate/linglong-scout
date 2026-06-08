@@ -1,6 +1,6 @@
 """IngestAgent — LLM-driven morning brief generator.
 
-Pre-searches all keywords via SearXNG, then calls LLM once with the full
+Collects data from RSS and GitHub trending, then calls LLM once with the full
 context to produce a structured morning brief in markdown.
 """
 
@@ -44,18 +44,6 @@ def _denormalize(items: list[dict[str, Any]], source: str) -> list[dict[str, str
             flat["period"] = extra.get("period", "")
         result.append(flat)
     return result
-
-
-def _format_results(results: list[dict[str, str]]) -> str:
-    """Format search results as numbered text for LLM context."""
-    lines: list[str] = []
-    for i, r in enumerate(results, 1):
-        lines.append(f"{i}. {r['title']}")
-        lines.append(f"   URL: {r['url']}")
-        if r["snippet"]:
-            lines.append(f"   摘要: {r['snippet'][:200]}")
-        lines.append("")
-    return "\n".join(lines)
 
 
 _SOURCE_LABELS = {
@@ -204,13 +192,12 @@ class IngestAgent:
 
     async def run(self, package: SourcePackage, user_id: str = "default") -> str:
         """Full pipeline: collect → store raw → format → LLM → brief."""
-        raw = await collect_data(package)
+        raw = await collect_data()
         today = date.today().isoformat()
 
         from linglong.scout.raw_store import store_raw
         store_raw(
             target_date=today,
-            searxng=raw["searxng"],
             github=raw["github"],
             rss=raw["rss"],
             github_source=raw["github_source"],
@@ -224,17 +211,15 @@ class IngestAgent:
 
     async def _generate(self, package: SourcePackage, raw: dict[str, Any], user_id: str = "default") -> str:
         """Format raw data + call LLM to produce brief."""
-        all_results = _denormalize(raw["searxng"], "searxng")
         github_repos = _denormalize(raw["github"], "github")
         github_source = raw.get("github_source", "")
         rss_items = _denormalize(raw["rss"], "rss")
 
         today = date.today().isoformat()
 
-        if not all_results and not github_repos and not rss_items:
+        if not github_repos and not rss_items:
             return f"# {package.topic} · {today}\n\n今日暂无搜索结果。"
 
-        search_text = _format_results(all_results)
         github_text = _format_github(github_repos, github_source)
         rss_text = _format_rss(rss_items)
 
@@ -262,7 +247,6 @@ class IngestAgent:
             topic=package.topic,
             date=today,
             time_range=time_range,
-            search_results=search_text,
             github_data=github_text,
             rss_data=rss_text,
             company_snapshot=snapshot_text,
@@ -271,8 +255,8 @@ class IngestAgent:
         )
 
         logger.info(
-            "Calling LLM with %d SearXNG + %d GitHub + %d RSS items...",
-            len(all_results), len(github_repos), len(rss_items),
+            "Calling LLM with %d GitHub + %d RSS items...",
+            len(github_repos), len(rss_items),
         )
         try:
             output = await _call_llm(system_prompt, package.topic, today)

@@ -1,4 +1,4 @@
-"""Data collection — SearXNG search, GitHub trending, RSS feeds."""
+"""Data collection — GitHub trending, RSS feeds."""
 
 import asyncio
 import logging
@@ -56,21 +56,6 @@ class SourceHealth:
 
 source_health = SourceHealth()
 
-# Domains that rarely contain actual news
-_NOISE_DOMAINS = {
-    "baike.baidu.com", "baidu.com", "zdic.net", "wikipedia.org",
-    "zhihu.com", "csdn.net", "w3school.com.cn", "iciba.com",
-    "collinsdictionary.com", "cambridge.org", "google.com",
-    "google.com.hk", "support.google.com", "about.google",
-    "m.baidu.com", "baike.com", "m.baike.com",
-}
-
-
-def _is_noise_url(url: str) -> bool:
-    """Check if a URL is likely a noise result (dictionary, homepage, etc.)."""
-    host = url.split("/")[2] if "//" in url else ""
-    return any(host == d or host.endswith("." + d) for d in _NOISE_DOMAINS)
-
 
 def _resolve_source_url(source: dict[str, str]) -> str:
     """Resolve a source config to a fetchable URL.
@@ -108,81 +93,6 @@ async def _github_headers() -> dict[str, str]:
     if token:
         headers["Authorization"] = f"Bearer {token}"
     return headers
-
-
-# --- SearXNG ---
-
-async def _searxng_search(query: str, max_results: int = 15) -> list[dict[str, str]]:
-    """Search via SearXNG, return [{title, url, snippet}]."""
-    config = get_config()
-    base_url = config.ingest.searxng_url.rstrip("/")
-    timeout = config.ingest.search_timeout
-
-    params: dict[str, Any] = {
-        "q": query,
-        "format": "json",
-        "categories": "general",
-    }
-    headers: dict[str, str] = {}
-    if config.ingest.searxng_api_key:
-        headers["Authorization"] = f"Bearer {config.ingest.searxng_api_key}"
-
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        response = await client.get(f"{base_url}/search", params=params, headers=headers)
-        response.raise_for_status()
-
-    data = response.json()
-    results = []
-    for r in data.get("results", [])[:max_results]:
-        title = r.get("title", "").strip()
-        url = r.get("url", "").strip()
-        snippet = r.get("content", "").strip()
-        if not title or not url or _is_noise_url(url):
-            continue
-        results.append({"title": title, "url": url, "snippet": snippet})
-
-    logger.info("SearXNG '%s': %d results (after noise filter)", query, len(results))
-    return results
-
-
-def _dedup_results(results: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Deduplicate by URL."""
-    seen: set[str] = set()
-    deduped: list[dict[str, str]] = []
-    for r in results:
-        url = r["url"]
-        if url not in seen:
-            seen.add(url)
-            deduped.append(r)
-    return deduped
-
-
-async def _search_all_keywords(package: SourcePackage) -> list[dict[str, str]]:
-    """Search all keywords concurrently with semaphore rate limiting."""
-    sem = asyncio.Semaphore(5)
-
-    async def _search_one(keyword: str, max_results: int) -> list[dict[str, str]]:
-        async with sem:
-            try:
-                return await _searxng_search(keyword, max_results)
-            except Exception as e:
-                logger.warning("Search failed for '%s': %s", keyword, e)
-                return []
-
-    tasks: list[asyncio.Task] = []
-    for query_group in package.search_queries:
-        for keyword in query_group.keywords:
-            tasks.append(
-                asyncio.create_task(
-                    _search_one(keyword, query_group.max_results * 2)
-                )
-            )
-
-    results = await asyncio.gather(*tasks)
-    all_results: list[dict[str, str]] = []
-    for batch in results:
-        all_results.extend(batch)
-    return all_results
 
 
 # --- GitHub Trending ---
@@ -545,26 +455,16 @@ async def _fetch_rss_feeds() -> list[dict[str, str]]:
 
 # --- Collect orchestrator ---
 
-async def collect(package: SourcePackage) -> dict[str, Any]:
+async def collect() -> dict[str, Any]:
     """Fetch all sources and return raw data dict.
 
-    Returns {"searxng": [...], "github": [...], "github_source": str, "rss": [...]}.
+    Returns {"github": [...], "github_source": str, "rss": [...]}.
     """
-    searxng_results, github_result, rss_items_raw = await asyncio.gather(
-        _search_all_keywords(package),
+    github_result, rss_items_raw = await asyncio.gather(
         _github_trending(),
         _fetch_rss_feeds(),
         return_exceptions=True,
     )
-
-    # Process SearXNG results
-    raw_searxng = searxng_results if not isinstance(searxng_results, Exception) else []
-    if isinstance(searxng_results, Exception):
-        source_health.record("SearXNG", False, 0)
-        logger.warning("SearXNG search failed: %s", searxng_results)
-    all_results = _dedup_results(raw_searxng)
-    source_health.record("SearXNG", not isinstance(searxng_results, Exception), len(all_results))
-    logger.info("After dedup: %d unique SearXNG results", len(all_results))
 
     # Process GitHub results
     if isinstance(github_result, Exception):
@@ -575,21 +475,17 @@ async def collect(package: SourcePackage) -> dict[str, Any]:
         github_repos, github_source = github_result
         source_health.record("GitHub", True, len(github_repos))
 
-    # Process RSS results (cross-dedup against SearXNG)
+    # Process RSS results
     rss_items = rss_items_raw if not isinstance(rss_items_raw, Exception) else []
     if isinstance(rss_items_raw, Exception):
         source_health.record("RSS", False, 0)
         logger.warning("RSS fetch failed: %s", rss_items_raw)
     else:
         source_health.record("RSS", True, len(rss_items))
-    searxng_urls = {r["url"] for r in all_results}
-    rss_items = [r for r in rss_items if r["url"] not in searxng_urls]
-    logger.info("RSS: %d items fetched (after cross-dedup)", len(rss_items))
 
     logger.info(source_health.summary())
 
     return {
-        "searxng": all_results,
         "github": github_repos,
         "github_source": github_source,
         "rss": rss_items,
