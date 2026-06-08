@@ -8,10 +8,9 @@ AI 行业信息采集 Agent —— 搜索、RSS、GitHub Trending 多源并发�
 
 ```mermaid
 graph LR
-    SearXNG["SearXNG<br/>17 组精准关键词"] --> Collect
-    RSS["RSS Feeds<br/>14 个订阅源"] --> Collect
+    RSS["RSS Feeds<br/>18 个订阅源"] --> Collect
     GH["GitHub Trending<br/>日/周/月"] --> Collect
-    Collect["Collect<br/>三路并发"] --> Raw["RawStore<br/>Redis + JSON"]
+    Collect["Collect<br/>两路并发"] --> Raw["RawStore<br/>Redis + JSON"]
     Raw --> Agent["IngestAgent<br/>单次 LLM prompt"]
     Agent --> Brief["5 维度<br/>Markdown 早报"]
 ```
@@ -82,7 +81,7 @@ linglong-scout init           # 生成 token 写入 .env，serve (HTTP) 必需
 
 ### Docker 部署
 
-所有服务（Scout + Redis + RSSHub + SearXNG）一个 `docker compose up` 启动：
+所有服务（Scout + Redis + RSSHub）一个 `docker compose up` 启动：
 
 ```bash
 git clone https://github.com/xinovate/linglong-scout.git
@@ -91,9 +90,6 @@ cd linglong-scout
 # 配置
 cp .scout.example.yml .scout.yml      # 编辑填入 LLM API Key 等必填项
 cp .env.example .env                   # 填入 REDIS_PASSWORD（必填）
-
-# SearXNG 配置（可选，默认已包含开发用 settings.yml）
-# 编辑 config/searxng/settings.yml 自定义搜索引擎
 
 # 启动
 docker compose up -d
@@ -107,14 +103,14 @@ docker compose logs -f scout
 
 `.env`（可选，Docker 部署时自动使用默认密码，参考 `.env.example`）：
 
-Docker 内部网络 `scout-net` 互联，仅 Scout 暴露 `127.0.0.1:9900` 到主机，Redis/RSSHub/SearXNG 仅容器内可达。`.scout.example.yml` 中的网络地址字段使用 `${ENV_VAR:-default}` 语法，本地开发走默认值，Docker 环境由 `docker-compose.yml` 自动注入容器内地址，无需手动修改。
+Docker 内部网络 `scout-net` 互联，仅 Scout 暴露 `127.0.0.1:9900` 到主机，Redis/RSSHub 仅容器内可达。`.scout.example.yml` 中的网络地址字段使用 `${ENV_VAR:-default}` 语法，本地开发走默认值，Docker 环境由 `docker-compose.yml` 自动注入容器内地址，无需手动修改。
 
 ---
 
 ## 特性
 
 - **6 个 MCP 工具** — RSS、趋势、早报生成、用户偏好
-- **三路并发采集** — SearXNG / GitHub / RSS 并行（~8s vs 串行 ~57s）
+- **两路并发采集** — GitHub / RSS 并行（~8s vs 串行 ~57s）
 - **双层去重** — URL 级 + BriefHistory 跨天语义去重
 - **按用户隔离** — 缓存、偏好、早报按 user_id 分区
 - **内置调度器** — asyncio 后台任务，每天自动采集 + 预生成早报
@@ -183,7 +179,6 @@ llm:
   llm_model: ""                    # 必填
 
 ingest:
-  searxng_url: ${LL_INGEST_SEARXNG_URL:-http://localhost:8088}
   rsshub_url: ${LL_INGEST_RSSHUB_URL:-http://localhost:1200}
   collect_schedule: "06:55"        # 每天自动采集，留空禁用
   rss_sources:
