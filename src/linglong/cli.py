@@ -96,7 +96,6 @@ def cmd_collect(args) -> None:
     from datetime import date
 
     from linglong.config import get_config
-    from linglong.scout.package import SourcePackage
     from linglong.scout.raw_store import store_raw
 
     config = get_config()
@@ -104,7 +103,6 @@ def cmd_collect(args) -> None:
         print("No packages configured in .scout.yml", file=sys.stderr)
         sys.exit(1)
 
-    package = SourcePackage(**config.ingest.packages[0])
     from linglong.scout.collect import collect as collect_data
     raw = asyncio.run(collect_data())
 

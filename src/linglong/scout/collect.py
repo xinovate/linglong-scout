@@ -11,7 +11,6 @@ import feedparser
 import httpx
 
 from linglong.config import get_config
-from linglong.scout.package import SourcePackage
 
 logger = logging.getLogger(__name__)
 
