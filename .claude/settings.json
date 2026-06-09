@@ -40,6 +40,19 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["-c", "python3 ${CLAUDE_PROJECT_DIR}/scripts/ruff-hook.py"],
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }
