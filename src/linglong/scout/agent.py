@@ -125,8 +125,65 @@ def _load_prompt() -> str:
     return path.read_text(encoding="utf-8")
 
 
+def _is_anthropic_api(base_url: str) -> bool:
+    """Detect Anthropic-compatible API from base URL."""
+    return "/anthropic" in base_url
+
+
+def _build_anthropic_request(
+    base_url: str, api_key: str, model: str, system_prompt: str,
+    topic: str, date_str: str, max_tokens: int, temperature: float, timeout: int,
+) -> tuple[str, dict, dict]:
+    """Build Anthropic Messages API request."""
+    url = f"{base_url}/v1/messages"
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+    body = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "system": system_prompt,
+        "messages": [
+            {"role": "user", "content": f"请基于以上数据，生成 {topic}（{date_str}）的早报。"},
+        ],
+    }
+    return url, headers, body
+
+
+def _build_openai_request(
+    base_url: str, api_key: str, model: str, system_prompt: str,
+    topic: str, date_str: str, max_tokens: int, temperature: float, timeout: int,
+) -> tuple[str, dict, dict]:
+    """Build OpenAI Chat Completions API request."""
+    url = f"{base_url}/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "content-type": "application/json",
+    }
+    body = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"请基于以上数据，生成 {topic}（{date_str}）的早报。"},
+        ],
+    }
+    return url, headers, body
+
+
+def _parse_llm_response(data: dict, is_anthropic: bool) -> str:
+    """Extract text from LLM response based on API type."""
+    if is_anthropic:
+        return data["content"][0]["text"].strip()
+    return data["choices"][0]["message"]["content"].strip()
+
+
 async def _call_llm(system_prompt: str, topic: str, date_str: str, max_tokens: int | None = None, retries: int | None = None) -> str:
-    """Call LLM via Anthropic Messages API, with retry."""
+    """Call LLM with retry, auto-detecting Anthropic vs OpenAI protocol."""
     config = get_config()
     base_url = config.llm.llm_base_url
     api_key = config.llm.llm_api_key
@@ -141,31 +198,26 @@ async def _call_llm(system_prompt: str, topic: str, date_str: str, max_tokens: i
     timeout = config.ingest.llm_timeout
     temperature = config.llm.llm_temperature
 
+    is_anthropic = _is_anthropic_api(base_url)
+    if is_anthropic:
+        url, headers, body = _build_anthropic_request(
+            base_url, api_key, model, system_prompt, topic, date_str,
+            max_tokens, temperature, timeout,
+        )
+    else:
+        url, headers, body = _build_openai_request(
+            base_url, api_key, model, system_prompt, topic, date_str,
+            max_tokens, temperature, timeout,
+        )
+
     last_error: Exception | None = None
     for attempt in range(retries + 1):
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{base_url}/v1/messages",
-                    headers={
-                        "x-api-key": api_key,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json",
-                    },
-                    json={
-                        "model": model,
-                        "max_tokens": max_tokens,
-                        "temperature": temperature,
-                        "system": system_prompt,
-                        "messages": [
-                            {"role": "user", "content": f"请基于以上数据，生成 {topic}（{date_str}）的早报。"},
-                        ],
-                    },
-                    timeout=timeout,
-                )
+                response = await client.post(url, headers=headers, json=body, timeout=timeout)
             response.raise_for_status()
             data = response.json()
-            return data["content"][0]["text"].strip()
+            return _parse_llm_response(data, is_anthropic)
         except httpx.TimeoutException as e:
             last_error = e
             if attempt < retries:
