@@ -7,7 +7,7 @@
 
 | 日期 | 主题 | 关键结论 |
 |------|------|----------|
-| 2026-06-12 | LLM 双协议兼容 + Hook matcher 修复 | agent.py 自动检测 Anthropic/OpenAI 协议；hook `if` 模式从 `git push*` 改为 `*git push*` 修复链式命令匹配；Claude Code 官方文档对比梳理 5 项盲区 |
+| 2026-06-12 | LLM 双协议兼容 + Hook 修复 + /health 端点 | agent.py 自动检测 Anthropic/OpenAI 协议；hook `if` 模式改为 `*git push*` 修复链式匹配；添加 `/health` 免鉴权端点 + healthcheck 改 HTTP 级别，改善 OpenClaw 冷启动连接稳定性 |
 | 2026-06-09 | 服务器配置同步 + MCP 验证 + Agent/Skills | 服务器 .scout.yml 同步本地最新版；清理孤立 SearXNG 容器 + 废弃 .env 变量；MCP 6 工具全部可用；添加 python-reviewer Agent + 3 个 Skills |
 | 2026-06-08 | SearXNG 完全移除 + 文档清理 | 48 条早报零引用 SearXNG；采集从三路改为两路（RSS+GitHub）；删除 search_web 工具（7→6）；6 规则文件 + 8 文档文件引用清理 |
 | 2026-06-05 | 早报 prompt 优化 + OpenClaw MCP 排查 | 开源趋势改为日榜 TOP 8（解决日/周/月混排+数字幻觉）；关键人物/行业要闻增加来源溯源列；OpenClaw MCP 连接失败定位为客户端 streamable-http 支持问题 |
