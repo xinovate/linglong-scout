@@ -19,21 +19,21 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(git commit*)",
+            "if": "Bash(*git commit*)",
             "command": "bash",
             "args": ["-c", "python3 ${CLAUDE_PROJECT_DIR}/scripts/privacy-check.py"],
             "timeout": 10
           },
           {
             "type": "command",
-            "if": "Bash(git commit*)",
+            "if": "Bash(*git commit*)",
             "command": "bash",
             "args": ["-c", "python3 ${CLAUDE_PROJECT_DIR}/scripts/doc-check.py --claude-hook"],
             "timeout": 10
           },
           {
             "type": "command",
-            "if": "Bash(git push*)",
+            "if": "Bash(*git push*)",
             "command": "bash",
             "args": ["-c", "python3 ${CLAUDE_PROJECT_DIR}/scripts/journal-check.py --claude-hook"],
             "timeout": 5
