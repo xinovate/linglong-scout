@@ -23,7 +23,7 @@ ingest:
   # LLM 早报生成
   llm_max_tokens: 8000
   llm_retries: 2
-  llm_timeout: 120
+  llm_timeout: 300
 
   # GitHub 开源趋势
   # GitHub API token (optional, for higher rate limits).
