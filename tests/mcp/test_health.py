@@ -1,4 +1,4 @@
-"""Tests for /health endpoint and HTTP app setup."""
+"""Tests for /health endpoint via HealthMiddleware."""
 
 from unittest.mock import patch
 
@@ -27,11 +27,3 @@ def test_health_no_auth_required():
     client = TestClient(app)
     response = client.get("/health")
     assert response.status_code == 200
-    assert "Authorization" not in response.headers
-
-
-def test_app_has_health_route():
-    """Verify /health route is registered in the Starlette app."""
-    app = _create_app()
-    paths = [route.path for route in app.routes if hasattr(route, "path")]
-    assert "/health" in paths

@@ -2,9 +2,9 @@
 
 import logging
 
-from starlette.applications import Starlette
-from starlette.responses import JSONResponse
-from starlette.routing import Mount, Route
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
 
 from mcp.server.fastmcp import FastMCP
 
@@ -24,8 +24,13 @@ logger = logging.getLogger(__name__)
 _INGEST_TOOLS = [fetch_raw, fetch_rss, fetch_github_trending, generate_brief, execute_package, record_feedback]
 
 
-def _health_endpoint(request) -> JSONResponse:
-    return JSONResponse({"status": "ok"})
+class HealthMiddleware(BaseHTTPMiddleware):
+    """Return health status without touching the MCP handler."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        if request.url.path == "/health":
+            return JSONResponse({"status": "ok"})
+        return await call_next(request)
 
 
 def create_server() -> FastMCP:
@@ -43,8 +48,8 @@ def create_server() -> FastMCP:
     return server
 
 
-def create_http_app() -> Starlette:
-    """Create a Starlette app with /health and MCP route for scout tools."""
+def create_http_app():
+    """Create an ASGI app with /health and MCP route for scout tools."""
     config = get_config()
 
     from mcp.server.fastmcp.server import TransportSecuritySettings
@@ -67,10 +72,8 @@ def create_http_app() -> Starlette:
         server.tool()(tool)
     logger.info("Registered %d scout tools at /mcp/scout", len(_INGEST_TOOLS))
 
-    mcp_app = server.streamable_http_app()
-    return Starlette(
-        routes=[
-            Route("/health", _health_endpoint),
-            Mount("/", app=mcp_app),
-        ],
-    )
+    app = server.streamable_http_app()
+    # HealthMiddleware is innermost — runs after auth, before MCP handler.
+    # This avoids wrapping the MCP app (which breaks its lifespan/task-group).
+    app.add_middleware(HealthMiddleware)
+    return app
