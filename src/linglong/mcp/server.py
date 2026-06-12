@@ -3,6 +3,8 @@
 import logging
 
 from starlette.applications import Starlette
+from starlette.responses import JSONResponse
+from starlette.routing import Mount, Route
 
 from mcp.server.fastmcp import FastMCP
 
@@ -22,6 +24,10 @@ logger = logging.getLogger(__name__)
 _INGEST_TOOLS = [fetch_raw, fetch_rss, fetch_github_trending, generate_brief, execute_package, record_feedback]
 
 
+def _health_endpoint(request) -> JSONResponse:
+    return JSONResponse({"status": "ok"})
+
+
 def create_server() -> FastMCP:
     """Create a FastMCP server (stdio mode)."""
     config = get_config()
@@ -38,7 +44,7 @@ def create_server() -> FastMCP:
 
 
 def create_http_app() -> Starlette:
-    """Create a Starlette app with MCP route for scout tools."""
+    """Create a Starlette app with /health and MCP route for scout tools."""
     config = get_config()
 
     from mcp.server.fastmcp.server import TransportSecuritySettings
@@ -61,4 +67,10 @@ def create_http_app() -> Starlette:
         server.tool()(tool)
     logger.info("Registered %d scout tools at /mcp/scout", len(_INGEST_TOOLS))
 
-    return server.streamable_http_app()
+    mcp_app = server.streamable_http_app()
+    return Starlette(
+        routes=[
+            Route("/health", _health_endpoint),
+            Mount("/", app=mcp_app),
+        ],
+    )
