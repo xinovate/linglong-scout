@@ -24,7 +24,7 @@ flowchart TD
     TRANSPORT -->|stdio| STDIO["server.run(transport='stdio')<br/>子进程 stdio 管道"]
     TRANSPORT -->|streamable-http| HTTP_CHECK{auth_token?}
 
-    HTTP_CHECK -->|有| HTTP_AUTH["create_http_app()<br/>+ TokenAuthMiddleware<br/>+ 自动采集调度<br/>+ uvicorn 监听"]
+    HTTP_CHECK -->|有| HTTP_AUTH["create_http_app()<br/>/health + /mcp/scout 路由<br/>+ TokenAuthMiddleware<br/>+ 自动采集调度<br/>+ uvicorn 监听"]
     HTTP_CHECK -->|无| HTTP_AUTO["auto-generate token<br/>+ 写入 Redis<br/>+ 日志警告"]
 
     STDIO --> RUNNING(["服务运行中"])
@@ -146,6 +146,7 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 
 - 所有 MCP 工具函数均为 `async def`，FastMCP 原生支持异步，无需线程池包装
 - `record_feedback()` 按 token 中的 user_id 隔离，仅影响对应用户的 `generate_brief()` 权重
+- `/health` 端点（`GET /health`）免鉴权，返回 `{"status": "ok"}`，用于 Docker healthcheck
 - RSSHub `ACCESS_KEY` 仅追加到 `:1200` 端口的 URL
 - GitHub API 优先用 `gh auth token` 认证（5000 req/hr）
 - MCP 子进程不继承 shell 环境变量，Claude Code 需通过 `env` 字段注入
@@ -156,7 +157,7 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong/mcp/server.py` | FastMCP 工厂 + 工具注册（6 个） |
+| `src/linglong/mcp/server.py` | FastMCP 工厂 + `/health` 路由 + 工具注册（6 个） |
 | `src/linglong/mcp/__main__.py` | 按 transport 启动 + 自动采集调度 |
 | `src/linglong/mcp/token.py` | Token 生成与解析工具 |
 | `src/linglong/mcp/_auth.py` | TokenAuthMiddleware |
