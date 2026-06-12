@@ -24,7 +24,7 @@ flowchart TD
     TRANSPORT -->|stdio| STDIO["server.run(transport='stdio')<br/>子进程 stdio 管道"]
     TRANSPORT -->|streamable-http| HTTP_CHECK{auth_token?}
 
-    HTTP_CHECK -->|有| HTTP_AUTH["create_http_app()<br/>/health + /mcp/scout 路由<br/>+ TokenAuthMiddleware<br/>+ 自动采集调度<br/>+ uvicorn 监听"]
+    HTTP_CHECK -->|有| HTTP_AUTH["create_http_app()<br/>HealthMiddleware<br/>+ TokenAuthMiddleware<br/>+ 自动采集调度<br/>+ uvicorn 监听"]
     HTTP_CHECK -->|无| HTTP_AUTO["auto-generate token<br/>+ 写入 Redis<br/>+ 日志警告"]
 
     STDIO --> RUNNING(["服务运行中"])
@@ -157,7 +157,7 @@ CLI 和 MCP 入口统一使用 `setup_logging()`（定义在 `config.py`）：
 
 | 文件 | 说明 |
 |------|------|
-| `src/linglong/mcp/server.py` | FastMCP 工厂 + `/health` 路由 + 工具注册（6 个） |
+| `src/linglong/mcp/server.py` | FastMCP 工厂 + HealthMiddleware + 工具注册（6 个） |
 | `src/linglong/mcp/__main__.py` | 按 transport 启动 + 自动采集调度 |
 | `src/linglong/mcp/token.py` | Token 生成与解析工具 |
 | `src/linglong/mcp/_auth.py` | TokenAuthMiddleware |
