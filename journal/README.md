@@ -7,6 +7,7 @@
 
 | 日期 | 主题 | 关键结论 |
 |------|------|----------|
+| 2026-06-14 | 系统 review + python-claude-spec 规范仓库 + 试点迁移 | review 暴露 5 类 Python AI 协作盲区（async 阻塞/连接泄漏/时序比较/SSRF 绕过/错误不可见）；抽出可复用规范仓库（三层分层 + install 脚本，公有 github.com/xinovate/python-claude-spec）；scout 作为首个试点迁移至三层结构（通用 01-05 + 项目特化 90-92），156 测试全过 |
 | 2026-06-12 | LLM 双协议 + /health + 飞书适配 + Cloudflare 放行 + timeout 调优 | agent.py 自动检测 Anthropic/OpenAI 协议；HealthMiddleware 免鉴权端点 + HTTP healthcheck；开源趋势改为列表适配飞书 3 表格限制；Cloudflare Bot Check 放行 /mcp/*；LLM timeout 120→300s 修复大数据量超时 |
 | 2026-06-09 | 服务器配置同步 + MCP 验证 + Agent/Skills | 服务器 .scout.yml 同步本地最新版；清理孤立 SearXNG 容器 + 废弃 .env 变量；MCP 6 工具全部可用；添加 python-reviewer Agent + 3 个 Skills |
 | 2026-06-08 | SearXNG 完全移除 + 文档清理 | 48 条早报零引用 SearXNG；采集从三路改为两路（RSS+GitHub）；删除 search_web 工具（7→6）；6 规则文件 + 8 文档文件引用清理 |
