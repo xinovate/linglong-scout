@@ -15,7 +15,6 @@ import json
 import re
 import subprocess
 import sys
-from pathlib import Path
 
 # Patterns that indicate sensitive information
 _PATTERNS: list[tuple[str, re.Pattern, str]] = [
@@ -35,7 +34,9 @@ _PATTERNS: list[tuple[str, re.Pattern, str]] = [
 _SKIP_PREFIXES = (
     ".git/",
     "scripts/privacy-check.py",
-    ".claude/rules/privacy.md",
+    # Rule files legitimately contain example tokens to illustrate
+    # what's forbidden — skip the whole rules directory.
+    ".claude/rules/",
 )
 
 # Allowlisted patterns (false positives)
