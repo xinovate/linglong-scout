@@ -24,6 +24,9 @@ _DEDUP_WINDOWS: dict[str, int] = {
     "学术前沿": 14,
 }
 
+# Match both `## ` (legacy) and `### ` (current prompt) section headings.
+_HEADING_RE = re.compile(r"^(#{2,3})\s+(.+)$")
+
 
 def parse_sections(output: str) -> dict[str, str]:
     """Parse LLM output into per-dimension sections by ## headers."""
@@ -32,10 +35,11 @@ def parse_sections(output: str) -> dict[str, str]:
     current_lines: list[str] = []
 
     for line in output.split("\n"):
-        if line.startswith("## "):
+        heading = _HEADING_RE.match(line)
+        if heading:
             if current_dim and current_lines:
                 sections[current_dim] = "\n".join(current_lines).strip()
-            dim = line[3:].strip()
+            dim = heading.group(2).strip()
             for key in _DEDUP_WINDOWS:
                 if key in dim:
                     current_dim = key

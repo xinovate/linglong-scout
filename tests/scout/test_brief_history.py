@@ -10,31 +10,31 @@ from linglong.scout.brief_history import BriefHistory, parse_sections
 
 _SAMPLE_OUTPUT = """# AI 早报 · 2026-05-25
 
-## 👤 关键人物
+### 👤 关键人物
 
 | 观点/动态 | 来源人 | 解读 |
 |-----------|--------|------|
 | LLM is a dead end | Yann LeCun | 公开唱反调 |
 
-## 🏢 行业要闻
+### 🏢 行业要闻
 
 | 事件 | 公司 | 最新融资 | 股价/估值变动 | 解读 |
 |------|------|----------|--------------|------|
 | 发布 GPT-5.5 | OpenAI | — | 估值 $3000亿 ↑ | 推理速度大幅优化 |
 
-## 📜 政策动态
+### 📜 政策动态
 
 | 政策名称 | 发布部门 | 解读 |
 |----------|----------|------|
 | EU AI Act | 欧盟 | 合规成本剧增 |
 
-## ⭐ 开源趋势
+### ⭐ 开源趋势
 
 | 项目名 | 分类 | Stars | 解读 | 链接 |
 |--------|------|-------|------|------|
 | foo/bar | 日增长 #1 | 21k | test | [GitHub](https://github.com/foo/bar) |
 
-## 💰 融资动态
+### 💰 融资动态
 
 | 公司 | 融资 | 估值 |
 |------|------|------|
@@ -42,7 +42,7 @@ _SAMPLE_OUTPUT = """# AI 早报 · 2026-05-25
 
 ━━━━━━━━━━━━━━━━━━━━
 
-## 🔥 今日最有价值信息
+### 🔥 今日最有价值信息
 
 **① [Test]**
 - 公司层面：...
@@ -71,6 +71,12 @@ class TestParseSections:
 
     def test_no_headers(self):
         assert parse_sections("just some text\nmore text") == {}
+
+    def test_accepts_level2_headings(self):
+        """Legacy `## ` headings still parse (backward compat)."""
+        legacy = "## 关键人物\n\n| 动态 | 人物 |\n|------|------|\n| foo | bar |\n"
+        sections = parse_sections(legacy)
+        assert "关键人物" in sections
 
 
 def _mock_redis():
@@ -180,3 +186,19 @@ class TestBriefHistory:
     def test_no_history_returns_empty(self, mock_r):
         history = BriefHistory()
         assert history.load() == {}
+
+    def test_real_format_parses_and_saves(self, mock_r):
+        """Real ### output must parse non-empty and persist to history.
+
+        Regression: before the heading-level fix, parse_sections returned {}
+        for ### output, so save() was never called and history stayed empty.
+        """
+        _, store = mock_r
+        sections = parse_sections(_SAMPLE_OUTPUT)
+        assert sections, "### output must parse to non-empty sections"
+        history = BriefHistory()
+        today = date.today().isoformat()
+        history.save(today, sections)
+        key = f"scout:history:{today}"
+        assert key in store
+        assert store[key]
