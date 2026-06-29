@@ -1,6 +1,6 @@
 # D-03 去重机制
 
-> 状态：✅ 已实现 | 最后更新：2026-06-08 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
+> 状态：✅ 已实现 | 最后更新：2026-06-29 | 依赖：[D-02 Agent 流水线](02-agent-pipeline.md)
 > 属于 [D-00 设计总览](00-overview.md) 的质量层子设计。
 
 ---
@@ -122,3 +122,11 @@ ingest:
 |------|------|
 | `src/linglong/scout/brief_history.py` | BriefHistory 类 |
 | `src/linglong/scout/agent.py` | URL 去重逻辑 |
+
+---
+
+## 实现备注
+
+**存储后端**:BriefHistory 历史实际存于 Redis(`scout:history:<YYYY-MM-DD>` hash,各维度为字段,TTL 16 天),由 `cache.py` 的 `save_history`/`load_history` 实现。上文流程图中的 `~/linglong/brief_history/*.json` 是早期文件存储的旧描述,迁移 Redis 后未同步,待清理。
+
+**2026-06-29 修复(标题层级 bug)**:`parse_sections` 原按 `## ` 切分板块,但 `morning_brief.md` 输出 `### ` 三级标题,`"### x".startswith("## ")` 为 False → sections 解析为空 → `agent.py` 的 `if sections:` 不通过 → `save` 从不执行 → Redis `scout:history:*` 长期为空、跨天去重完全失效。改为正则 `^(#{2,3})\s+(.+)$` 兼容两种层级后修复,并同步在 prompt 加跨板块去重约束。
