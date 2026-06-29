@@ -7,6 +7,7 @@
 
 | 日期 | 主题 | 关键结论 |
 |------|------|----------|
+| 2026-06-29 | 早报渲染到博客 + 跨天去重 bug 修复 | 服务端渲染器(/opt/scout-render/)docker exec redis 取 brief→markdown→HTML,复用 Fluid CSS(main.css+静态:root+markdown-body),输出 /daily/ai/<date>.html,cron 07:20/07:35,零侵入;parse_sections 原仅匹配 ## 导致 ### 早报 sections 空、history 不存、跨天去重失效,正则兼容 #{2,3} 修复,测试样本对齐 ###,158 测试全过 |
 | 2026-06-14 | 系统 review + python-claude-spec 规范仓库 + 试点迁移 | review 暴露 5 类 Python AI 协作盲区（async 阻塞/连接泄漏/时序比较/SSRF 绕过/错误不可见）；抽出可复用规范仓库（三层分层 + install 脚本，公有 github.com/xinovate/python-claude-spec）；scout 作为首个试点迁移至三层结构（通用 01-05 + 项目特化 90-92），156 测试全过 |
 | 2026-06-12 | LLM 双协议 + /health + 飞书适配 + Cloudflare 放行 + timeout 调优 | agent.py 自动检测 Anthropic/OpenAI 协议；HealthMiddleware 免鉴权端点 + HTTP healthcheck；开源趋势改为列表适配飞书 3 表格限制；Cloudflare Bot Check 放行 /mcp/*；LLM timeout 120→300s 修复大数据量超时 |
 | 2026-06-09 | 服务器配置同步 + MCP 验证 + Agent/Skills | 服务器 .scout.yml 同步本地最新版；清理孤立 SearXNG 容器 + 废弃 .env 变量；MCP 6 工具全部可用；添加 python-reviewer Agent + 3 个 Skills |
