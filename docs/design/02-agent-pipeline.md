@@ -126,7 +126,7 @@ sequenceDiagram
 | model | （通过 .scout.yml 配置） | 必填，无默认值 |
 | base_url | （通过 .scout.yml 配置） | Anthropic Messages API 兼容端点 |
 | max_tokens | 8000 | 输出上限 |
-| timeout | 120s | 单次调用超时 |
+| timeout | 300s | 单次调用超时(2026-07-03:120→300,大数据量生成需更长) |
 | retries | 2 | 失败重试次数 |
 
 `_call_llm()` 从 config 读 base_url（非硬编码），支持切换模型和端点。
@@ -151,6 +151,17 @@ time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} 
 | 单个 RSS 源 | log warning，跳过该源 |
 | GitHub Trending | 三级 fallback（OpenGithubs → HTML → Search API） |
 | LLM 调用 | 重试 2 次，仍失败则 BriefHistory fallback |
+
+---
+
+## Prompt 大小控制
+
+全量 RSS(399 条 × 标题+URL+摘要 200 字 ≈ 13 万字 / 6-7 万 token)会让 LLM(GLM)在大输入下输出退化——截断或空回(2026-07-03 早报事故,在"融资动态"处断、漏掉政策/开源/Top5)。`_generate` 拼装 prompt 前对 RSS 做两道收紧:
+
+- **每源 top 15**:`_cap_per_source` 按源分组,每源只留最新 15 条(feedparser 默认最新优先),保源覆盖、砍同质冗余。399 → ~247 条。
+- **摘要 120 字**:`_format_rss` 摘要 `[:200]` → `[:120]`,每条省 80 字。
+
+合计 prompt 降到 ~6 万字(GLM 安全区)。常量在 `agent.py` 顶部:`_RSS_PER_SOURCE_LIMIT`、`_RSS_SNIPPET_LIMIT`,需要时调整。
 
 ---
 
