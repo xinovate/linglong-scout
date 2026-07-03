@@ -172,6 +172,7 @@ def _build_anthropic_request(
 def _build_openai_request(
     base_url: str, api_key: str, model: str, system_prompt: str,
     topic: str, date_str: str, max_tokens: int, temperature: float, timeout: int,
+    disable_thinking: bool = False,
 ) -> tuple[str, dict, dict]:
     """Build OpenAI Chat Completions API request."""
     url = f"{base_url}/chat/completions"
@@ -188,6 +189,8 @@ def _build_openai_request(
             {"role": "user", "content": f"请基于以上数据，生成 {topic}（{date_str}）的早报。"},
         ],
     }
+    if disable_thinking:
+        body["thinking"] = {"type": "disabled"}
     return url, headers, body
 
 
@@ -224,6 +227,7 @@ async def _call_llm(system_prompt: str, topic: str, date_str: str, max_tokens: i
         url, headers, body = _build_openai_request(
             base_url, api_key, model, system_prompt, topic, date_str,
             max_tokens, temperature, timeout,
+            disable_thinking=config.llm.llm_disable_thinking,
         )
 
     last_error: Exception | None = None

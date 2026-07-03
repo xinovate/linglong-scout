@@ -13,6 +13,7 @@ llm:
   llm_base_url: "https://api.example.com/v1"
   llm_model: ""                            # Required: set via LL_SCOUT_LLM_MODEL or .scout.yml
   llm_temperature: 0.3                    # LLM 采样温度
+  llm_disable_thinking: false             # 思考模型(glm-5.1 等)禁用思考,让 max_tokens 全给 content(否则 reasoning 占预算致输出截断/空)
 
 # ── 信息采集 ──────────────────────────────────
 ingest:

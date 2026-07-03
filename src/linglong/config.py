@@ -35,6 +35,11 @@ class LLMConfig(BaseSettings):
     llm_model: str = Field(default="", description="LLM model name")
     llm_temperature: float = Field(default=0.3, description="LLM temperature")
     llm_max_tokens: int = Field(default=8000, description="LLM max output tokens")
+    llm_disable_thinking: bool = Field(
+        default=False,
+        description="Disable thinking mode for reasoning models (e.g. glm-5.1); "
+        "sends thinking={type:disabled} so max_tokens goes to content, not reasoning",
+    )
 
 
 class IngestConfig(BaseSettings):
