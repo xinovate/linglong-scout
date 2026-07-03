@@ -128,6 +128,7 @@ sequenceDiagram
 | max_tokens | 8000 | 输出上限 |
 | timeout | 300s | 单次调用超时(2026-07-03:120→300,大数据量生成需更长) |
 | retries | 2 | 失败重试次数 |
+| disable_thinking | true | glm-5.1 等思考模型禁用思考,否则 max_tokens 被 reasoning 占满致 content 截断/空(2026-07-03 事故根因) |
 
 `_call_llm()` 从 config 读 base_url（非硬编码），支持切换模型和端点。
 
