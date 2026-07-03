@@ -7,6 +7,7 @@ import pytest
 
 from linglong.scout.agent import (
     IngestAgent,
+    _cap_per_source,
     _format_company_snapshot,
     _format_github,
     _format_rss,
@@ -26,6 +27,19 @@ def _make_package() -> SourcePackage:
         name="test-brief",
         topic="AI 早报",
     )
+
+
+def test_cap_per_source_limits_each_source():
+    """Per-source cap keeps newest N per source, preserves order, leaves small sources intact."""
+    items = [{"source": "A", "title": str(i)} for i in range(20)] + \
+            [{"source": "B", "title": str(i)} for i in range(10)]
+    out = _cap_per_source(items, 15)
+    a = [it for it in out if it["source"] == "A"]
+    b = [it for it in out if it["source"] == "B"]
+    assert len(a) == 15
+    assert len(b) == 10
+    assert len(out) == 25
+    assert a[0]["title"] == "0"
 
 
 class TestIngestAgent:

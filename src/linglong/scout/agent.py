@@ -23,6 +23,10 @@ logger = logging.getLogger(__name__)
 
 _PROMPT_DIR = Path(__file__).parent / "prompts"
 
+# Bound LLM prompt size: cap items per source + truncate snippet.
+_RSS_PER_SOURCE_LIMIT = 15
+_RSS_SNIPPET_LIMIT = 120
+
 
 def _denormalize(items: list[dict[str, Any]], source: str) -> list[dict[str, str]]:
     """Convert normalized raw items back to source-specific format."""
@@ -93,9 +97,21 @@ def _format_rss(items: list[dict[str, str]]) -> str:
         lines.append(f"{i}. [{item['source']}] {item['title']}")
         lines.append(f"   URL: {item['url']}")
         if item["snippet"]:
-            lines.append(f"   摘要: {item['snippet'][:200]}")
+            lines.append(f"   摘要: {item['snippet'][:_RSS_SNIPPET_LIMIT]}")
         lines.append("")
     return "\n".join(lines)
+
+
+def _cap_per_source(items: list[dict[str, str]], limit: int) -> list[dict[str, str]]:
+    """Cap items per source to bound prompt size; preserves feed order (newest first)."""
+    seen: dict[str, int] = {}
+    result: list[dict[str, str]] = []
+    for it in items:
+        src = it.get("source", "")
+        if seen.get(src, 0) < limit:
+            result.append(it)
+            seen[src] = seen.get(src, 0) + 1
+    return result
 
 
 def _format_company_snapshot(snapshot: dict[str, Any]) -> str:
@@ -266,6 +282,13 @@ class IngestAgent:
         github_repos = _denormalize(raw["github"], "github")
         github_source = raw.get("github_source", "")
         rss_items = _denormalize(raw["rss"], "rss")
+        total_rss = len(rss_items)
+        rss_items = _cap_per_source(rss_items, _RSS_PER_SOURCE_LIMIT)
+        if len(rss_items) < total_rss:
+            logger.info(
+                "RSS capped per-source %d→%d (limit %d)",
+                total_rss, len(rss_items), _RSS_PER_SOURCE_LIMIT,
+            )
 
         today = date.today().isoformat()
 
