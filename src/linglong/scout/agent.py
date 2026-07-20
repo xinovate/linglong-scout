@@ -141,14 +141,19 @@ def _load_prompt() -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _is_anthropic_api(base_url: str) -> bool:
-    """Detect Anthropic-compatible API from base URL."""
+def _is_anthropic_api(base_url: str, protocol: str = "auto") -> bool:
+    """Select Anthropic-compatible API explicitly or from base URL."""
+    if protocol not in {"auto", "anthropic", "openai"}:
+        raise LLMError(f"Unsupported LLM protocol: {protocol}")
+    if protocol != "auto":
+        return protocol == "anthropic"
     return "/anthropic" in base_url
 
 
 def _build_anthropic_request(
     base_url: str, api_key: str, model: str, system_prompt: str,
     topic: str, date_str: str, max_tokens: int, temperature: float, timeout: int,
+    disable_thinking: bool = False,
 ) -> tuple[str, dict, dict]:
     """Build Anthropic Messages API request."""
     url = f"{base_url}/v1/messages"
@@ -166,6 +171,8 @@ def _build_anthropic_request(
             {"role": "user", "content": f"请基于以上数据，生成 {topic}（{date_str}）的早报。"},
         ],
     }
+    if disable_thinking:
+        body["thinking"] = {"type": "disabled"}
     return url, headers, body
 
 
@@ -197,7 +204,10 @@ def _build_openai_request(
 def _parse_llm_response(data: dict, is_anthropic: bool) -> str:
     """Extract text from LLM response based on API type."""
     if is_anthropic:
-        return data["content"][0]["text"].strip()
+        return "\n".join(
+            block["text"] for block in data["content"]
+            if block.get("type") == "text" and block.get("text")
+        ).strip()
     return data["choices"][0]["message"]["content"].strip()
 
 
@@ -217,11 +227,12 @@ async def _call_llm(system_prompt: str, topic: str, date_str: str, max_tokens: i
     timeout = config.ingest.llm_timeout
     temperature = config.llm.llm_temperature
 
-    is_anthropic = _is_anthropic_api(base_url)
+    is_anthropic = _is_anthropic_api(base_url, config.llm.llm_protocol)
     if is_anthropic:
         url, headers, body = _build_anthropic_request(
             base_url, api_key, model, system_prompt, topic, date_str,
             max_tokens, temperature, timeout,
+            disable_thinking=config.llm.llm_disable_thinking,
         )
     else:
         url, headers, body = _build_openai_request(
@@ -244,6 +255,8 @@ async def _call_llm(system_prompt: str, topic: str, date_str: str, max_tokens: i
                 logger.warning("LLM call attempt %d timed out, retrying...", attempt + 1)
         except httpx.HTTPStatusError as e:
             last_error = e
+            if e.response.status_code in {400, 401, 403, 404}:
+                break
             if attempt < retries:
                 logger.warning("LLM call attempt %d failed: %s, retrying...", attempt + 1, e)
         except Exception as e:

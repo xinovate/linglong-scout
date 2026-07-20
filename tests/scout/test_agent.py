@@ -7,10 +7,13 @@ import pytest
 
 from linglong.scout.agent import (
     IngestAgent,
+    _build_anthropic_request,
     _cap_per_source,
     _format_company_snapshot,
     _format_github,
     _format_rss,
+    _is_anthropic_api,
+    _parse_llm_response,
 )
 from linglong.scout.collect import (
     SourceHealth,
@@ -27,6 +30,39 @@ def _make_package() -> SourcePackage:
         name="test-brief",
         topic="AI 早报",
     )
+
+
+class TestLlmProtocol:
+    @pytest.mark.parametrize(
+        "base_url,protocol,expected",
+        [
+            ("https://example.com/anthropic", "auto", True),
+            ("https://ark.cn-beijing.volces.com/api/coding", "anthropic", True),
+            ("https://open.bigmodel.cn/api/coding/paas/v4", "openai", False),
+        ],
+    )
+    def test_selects_protocol(self, base_url, protocol, expected):
+        assert _is_anthropic_api(base_url, protocol) is expected
+
+    def test_rejects_unknown_protocol(self):
+        with pytest.raises(Exception, match="Unsupported LLM protocol"):
+            _is_anthropic_api("https://example.com", "unknown")
+
+    def test_anthropic_request_disables_thinking(self):
+        _, _, body = _build_anthropic_request(
+            "https://example.com", "key", "model", "system", "topic",
+            "2026-07-20", 100, 0.3, 30, disable_thinking=True,
+        )
+        assert body["thinking"] == {"type": "disabled"}
+
+    def test_anthropic_response_ignores_thinking_blocks(self):
+        data = {
+            "content": [
+                {"type": "thinking", "thinking": "internal"},
+                {"type": "text", "text": "OK"},
+            ],
+        }
+        assert _parse_llm_response(data, is_anthropic=True) == "OK"
 
 
 def test_cap_per_source_limits_each_source():

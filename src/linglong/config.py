@@ -33,6 +33,10 @@ class LLMConfig(BaseSettings):
         description="LLM base URL",
     )
     llm_model: str = Field(default="", description="LLM model name")
+    llm_protocol: str = Field(
+        default="auto",
+        description="LLM API protocol: auto | anthropic | openai",
+    )
     llm_temperature: float = Field(default=0.3, description="LLM temperature")
     llm_max_tokens: int = Field(default=8000, description="LLM max output tokens")
     llm_disable_thinking: bool = Field(

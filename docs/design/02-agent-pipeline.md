@@ -125,12 +125,13 @@ sequenceDiagram
 |------|---|------|
 | model | （通过 .scout.yml 配置） | 必填，无默认值 |
 | base_url | （通过 .scout.yml 配置） | Anthropic Messages API 兼容端点 |
+| protocol | auto | `auto` / `anthropic` / `openai`；URL 无法判定时显式配置 |
 | max_tokens | 8000 | 输出上限 |
 | timeout | 300s | 单次调用超时(2026-07-03:120→300,大数据量生成需更长) |
 | retries | 2 | 失败重试次数 |
 | disable_thinking | true | glm-5.1 等思考模型禁用思考,否则 max_tokens 被 reasoning 占满致 content 截断/空(2026-07-03 事故根因) |
 
-`_call_llm()` 从 config 读 base_url（非硬编码），支持切换模型和端点。
+`_call_llm()` 从 config 读 base_url（非硬编码），支持切换模型和端点。方舟 Coding Plan 的 URL 不含 `/anthropic`，必须显式设置 `llm_protocol: anthropic`。401/403 等永久认证错误不重试，避免失效 Key 连续调用。
 
 ---
 
