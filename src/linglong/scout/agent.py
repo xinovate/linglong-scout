@@ -38,6 +38,7 @@ def _denormalize(items: list[dict[str, Any]], source: str) -> list[dict[str, str
             "title": item.get("title", ""),
             "url": item.get("url", ""),
             "snippet": item.get("snippet", ""),
+            "published": item.get("published", ""),
         }
         if source == "rss":
             # 自动采集是扁平格式，Redis 回放是标准化格式；两条路径都要保留来源名。
@@ -100,6 +101,8 @@ def _format_rss(items: list[dict[str, str]]) -> str:
     for i, item in enumerate(items, 1):
         lines.append(f"{i}. [{item['source']}] {item['title']}")
         lines.append(f"   URL: {item['url']}")
+        if item.get("published"):
+            lines.append(f"   发布时间: {item['published']}")
         if item["snippet"]:
             lines.append(f"   摘要: {item['snippet'][:_RSS_SNIPPET_LIMIT]}")
         lines.append("")

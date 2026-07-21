@@ -60,7 +60,7 @@ def _normalize_rss(items: list[dict[str, str]], fetched_at: str) -> list[dict[st
             "url": r.get("url", ""),
             "snippet": r.get("snippet", ""),
             "source": "rss",
-            "published": "",
+            "published": r.get("published", ""),
             "fetched_at": fetched_at,
             "extra": {
                 "feed_name": r.get("source", ""),

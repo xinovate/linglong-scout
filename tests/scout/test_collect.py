@@ -106,6 +106,7 @@ class TestFetchSingleFeed:
             <item>
               <title>Article 1</title>
               <link>https://example.com/1</link>
+              <pubDate>Mon, 20 Jul 2026 08:30:00 +0000</pubDate>
               <description>Summary 1</description>
             </item>
           </channel>
@@ -126,6 +127,7 @@ class TestFetchSingleFeed:
 
         assert len(items) == 1
         assert items[0]["source"] == "TestFeed"
+        assert items[0]["published"] == "2026-07-20"
 
     @pytest.mark.asyncio
     async def test_returns_empty_on_network_error(self):

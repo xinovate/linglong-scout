@@ -41,9 +41,11 @@ class TestNormalizeRss:
             "url": "https://example.com/rss/1",
             "snippet": "summary",
             "source": "36氪",
+            "published": "2026-07-20",
         }]
         result = _normalize_rss(items, "2026-05-28T06:55:00Z")
         assert result[0]["source"] == "rss"
+        assert result[0]["published"] == "2026-07-20"
         assert result[0]["extra"]["feed_name"] == "36氪"
 
 

@@ -167,6 +167,8 @@ time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} 
 
 自动采集返回扁平格式(`source` 在顶层)，Redis 回放返回标准化格式(`extra.feed_name`)；`_denormalize()` 必须兼容两者。否则自动调度会丢失来源名，把所有 RSS 当成同一来源，错误地将 391 条压成 15 条（2026-07-21 修复）。
 
+RSS/Atom 发布时间随条目进入采集结果，优先读取 `published_parsed`、其次 `updated_parsed`，统一为 `YYYY-MM-DD`。`raw_store` 持久化该字段，`_format_rss()` 将其作为“发布时间”传给 LLM；学术前沿表格显示日期。源未提供日期时留空，不由模型推测。
+
 ---
 
 ## 关键文件

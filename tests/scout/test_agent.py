@@ -101,6 +101,17 @@ def test_flat_rss_sources_are_capped_independently():
     assert len(_cap_per_source(denormalized, 15)) == 30
 
 
+def test_format_rss_includes_published_date():
+    text = _format_rss([{
+        "source": "arXiv cs.AI",
+        "title": "Paper",
+        "url": "https://arxiv.org/abs/2607.00001",
+        "snippet": "Summary",
+        "published": "2026-07-20",
+    }])
+    assert "发布时间: 2026-07-20" in text
+
+
 class TestIngestAgent:
     @pytest.mark.asyncio
     async def test_run_produces_output(self):

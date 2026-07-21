@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import re
+import time
 from datetime import date, timedelta
 from typing import Any
 
@@ -413,11 +414,17 @@ async def fetch_single_feed(url: str, name: str = "", max_items: int = 30, *, al
                 continue
             summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
             clean = re.sub(r"<[^>]+>", "", summary)[:300]
+            published_parsed = (
+                getattr(entry, "published_parsed", None)
+                or getattr(entry, "updated_parsed", None)
+            )
+            published = time.strftime("%Y-%m-%d", published_parsed) if published_parsed else ""
             items.append({
                 "title": getattr(entry, "title", ""),
                 "url": link,
                 "snippet": clean,
                 "source": name,
+                "published": published,
             })
         return items
     except Exception as e:
