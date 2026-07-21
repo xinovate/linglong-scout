@@ -7,6 +7,7 @@
 
 | 日期 | 主题 | 关键结论 |
 |------|------|----------|
+| 2026-07-21 | 自动早报 RSS Top 15 分组修复 | 自动采集扁平格式的 source 被 `_denormalize` 丢失，391 条被误判为同源压到 15 条；兼容顶层 source 与 `extra.feed_name`，补双格式和跨来源限流测试 |
 | 2026-07-20 | LLM 账号迁移与日报恢复 | 旧 GLM Key 自 7-16 起 401 导致日报停更；迁移至火山方舟 Coding Plan（Anthropic Messages + glm-5.2[1M]），增加显式 llm_protocol、Anthropic thinking 禁用与永久错误不重试 |
 | 2026-07-03 | 早报截断/空回事故 + 修复(glm-5.1 思考模型) | 早报截断/空回;排查链:非 timeout/max_tokens → 减输入(cap 每源 top15+摘要 120,仍空)→ 真正根因 glm-5.1 思考模型 max_tokens 被 reasoning 占满;修复 config 加 llm_disable_thinking 开关 + body thinking={type:disabled},159 测试过 |
 | 2026-06-29 | 早报渲染到博客 + 跨天去重 bug 修复 | 服务端渲染器(/opt/scout-render/)docker exec redis 取 brief→markdown→HTML,复用 Fluid CSS(main.css+静态:root+markdown-body),输出 /daily/ai/<date>.html,cron 07:20/07:35,零侵入;parse_sections 原仅匹配 ## 导致 ### 早报 sections 空、history 不存、跨天去重失效,正则兼容 #{2,3} 修复,测试样本对齐 ###,158 测试全过 |

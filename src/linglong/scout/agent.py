@@ -40,12 +40,16 @@ def _denormalize(items: list[dict[str, Any]], source: str) -> list[dict[str, str
             "snippet": item.get("snippet", ""),
         }
         if source == "rss":
-            flat["source"] = item.get("extra", {}).get("feed_name", "")
+            # 自动采集是扁平格式，Redis 回放是标准化格式；两条路径都要保留来源名。
+            flat["source"] = (
+                item.get("extra", {}).get("feed_name")
+                or item.get("source", "")
+            )
         elif source == "github":
             extra = item.get("extra", {})
-            flat["stars"] = extra.get("stars", "")
-            flat["growth"] = extra.get("growth", "")
-            flat["period"] = extra.get("period", "")
+            flat["stars"] = extra.get("stars") or item.get("stars", "")
+            flat["growth"] = extra.get("growth") or item.get("growth", "")
+            flat["period"] = extra.get("period") or item.get("period", "")
         result.append(flat)
     return result
 

@@ -165,6 +165,8 @@ time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} 
 
 合计 prompt 降到 ~6 万字(GLM 安全区)。常量在 `agent.py` 顶部:`_RSS_PER_SOURCE_LIMIT`、`_RSS_SNIPPET_LIMIT`,需要时调整。
 
+自动采集返回扁平格式(`source` 在顶层)，Redis 回放返回标准化格式(`extra.feed_name`)；`_denormalize()` 必须兼容两者。否则自动调度会丢失来源名，把所有 RSS 当成同一来源，错误地将 391 条压成 15 条（2026-07-21 修复）。
+
 ---
 
 ## 关键文件

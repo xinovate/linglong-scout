@@ -9,6 +9,7 @@ from linglong.scout.agent import (
     IngestAgent,
     _build_anthropic_request,
     _cap_per_source,
+    _denormalize,
     _format_company_snapshot,
     _format_github,
     _format_rss,
@@ -76,6 +77,28 @@ def test_cap_per_source_limits_each_source():
     assert len(b) == 10
     assert len(out) == 25
     assert a[0]["title"] == "0"
+
+
+@pytest.mark.parametrize(
+    "item,expected_source",
+    [
+        ({"title": "flat", "source": "TechCrunch"}, "TechCrunch"),
+        ({"title": "stored", "source": "rss", "extra": {"feed_name": "AIHOT"}}, "AIHOT"),
+    ],
+)
+def test_denormalize_rss_preserves_source_for_both_raw_formats(item, expected_source):
+    result = _denormalize([item], "rss")
+    assert result[0]["source"] == expected_source
+
+
+def test_flat_rss_sources_are_capped_independently():
+    items = [
+        {"source": source, "title": f"{source}-{i}"}
+        for source in ("A", "B")
+        for i in range(20)
+    ]
+    denormalized = _denormalize(items, "rss")
+    assert len(_cap_per_source(denormalized, 15)) == 30
 
 
 class TestIngestAgent:
