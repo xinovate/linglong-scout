@@ -99,6 +99,7 @@ graph TD
 | `ScoutError` | `src/linglong/scout/exceptions.py` | Domain 异常层级（`ScoutError` / `LLMError` / `SourceError`） |
 | `cache.py` | `src/linglong/scout/cache.py` | Brief 缓存与历史管理 |
 | `redis_client.py` | `src/linglong/scout/redis_client.py` | 共享 Redis 客户端工厂 |
+| `Evaluation` | `src/linglong/scout/evaluation.py` | 固定历史输入的确定性质量检查 |
 
 完整组件表 → [设计总览](design/00-overview.md)
 

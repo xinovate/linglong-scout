@@ -169,6 +169,8 @@ time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} 
 
 RSS/Atom 发布时间随条目进入采集结果，优先读取 `published_parsed`、其次 `updated_parsed`，统一为 `YYYY-MM-DD`。`raw_store` 持久化该字段，`_format_rss()` 将其作为“发布时间”传给 LLM；学术前沿表格显示日期。源未提供日期时留空，不由模型推测。
 
+进入 Prompt 前按早报目标日期执行 7 天确定性过滤。可解析日期早于窗口或晚于目标日期的 RSS 条目直接排除；没有日期或日期无法解析的条目保留，避免因上游元数据缺失误删。Prompt 中的时效要求继续保留，但不再只依赖模型自行过滤已知过期来源。
+
 ---
 
 ## 关键文件

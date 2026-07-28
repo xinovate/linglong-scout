@@ -1,6 +1,6 @@
 # Scout 设计总览
 
-> 创建日期：2026-05-25 | 最后更新：2026-06-08 | 状态：已实现（v2.14）
+> 创建日期：2026-05-25 | 最后更新：2026-07-28 | 状态：已实现（v2.15）
 > 先读 [Scout README](../README.md) 了解项目定位和快速上手，本文件是设计层深入文档。
 
 ---
@@ -30,6 +30,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | D-05 | [Prompt 设计](05-prompt.md) | 内容层 | ✅ 已实现 | D-02 | 2026-05-26 |
 | D-06 | [MCP 接入](06-mcp.md) | 接入层 | ✅ 已实现 | D-02 | 2026-05-28 |
 | D-07 | [MCP 工具参考手册](07-mcp-tools.md) | 参考层 | ✅ 已实现 | D-06 | 2026-06-02 |
+| D-08 | [早报评测](08-evaluation.md) | 质量层 | ✅ 已实现 | D-02 | 2026-07-28 |
 
 ---
 
@@ -87,6 +88,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | v2.12 | 早报 prompt 紧凑格式 + pre-generate brief + githooks 管理 | prompt 段落标题嵌入格式标签；scheduler 采集后预生成早报避免 MCP 超时；doc-check pre-push 阻塞模式；.githooks 统一 hook 管理 |
 | v2.13 | All-in-One Docker Compose + RSSHub 配置独立化 | Redis/RSSHub 合并到统一 docker-compose；Docker 内部网络替代 nginx 反代；rsshub_url + route 字段替代 :1200 硬编码 |
 | v2.14 | 移除 SearXNG | SearXNG 完全移除，数据源精简为 RSS（18 源）+ GitHub Trending 两路并发；package 仅 name + topic；配置移除 searxng_url/searxng_api_key/search_timeout/search_queries |
+| v2.15 | 早报评测 | 历史输入按目标日期回放；确定性检查结构、来源、时效、重复与 GitHub 日榜 |
 
 ---
 
@@ -129,6 +131,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | `cache` | `src/linglong/scout/cache.py` | Brief 缓存（按 user_id 隔离，未命中回退 default）与历史管理 |
 | `redis_client` | `src/linglong/scout/redis_client.py` | 共享 Redis 客户端工厂（get_redis） |
 | `morning_brief.md` | `src/linglong/scout/prompts/morning_brief.md` | 早报 prompt 模板 |
+| `Evaluation` | `src/linglong/scout/evaluation.py` | 历史输入回放的确定性质量检查 |
 
 ---
 

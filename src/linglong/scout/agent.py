@@ -26,6 +26,7 @@ _PROMPT_DIR = Path(__file__).parent / "prompts"
 # Bound LLM prompt size: cap items per source + truncate snippet.
 _RSS_PER_SOURCE_LIMIT = 15
 _RSS_SNIPPET_LIMIT = 120
+_NEWS_LOOKBACK_DAYS = 7
 
 
 def _denormalize(items: list[dict[str, Any]], source: str) -> list[dict[str, str]]:
@@ -118,6 +119,29 @@ def _cap_per_source(items: list[dict[str, str]], limit: int) -> list[dict[str, s
         if seen.get(src, 0) < limit:
             result.append(it)
             seen[src] = seen.get(src, 0) + 1
+    return result
+
+
+def _filter_recent_items(
+    items: list[dict[str, str]],
+    target_date: date,
+    lookback_days: int = _NEWS_LOOKBACK_DAYS,
+) -> list[dict[str, str]]:
+    """Drop items with parseable dates outside the brief time window."""
+    earliest = target_date - timedelta(days=lookback_days)
+    result = []
+    for item in items:
+        published = item.get("published", "")
+        if not published:
+            result.append(item)
+            continue
+        try:
+            published_date = date.fromisoformat(str(published)[:10])
+        except ValueError:
+            result.append(item)
+            continue
+        if earliest <= published_date <= target_date:
+            result.append(item)
     return result
 
 
@@ -278,9 +302,11 @@ class IngestAgent:
         self,
         feedback_store: FeedbackStore | None = None,
         brief_history: BriefHistory | None = None,
+        company_snapshot: dict[str, Any] | None = None,
     ) -> None:
         self.feedback_store = feedback_store
         self.brief_history = brief_history
+        self.company_snapshot = company_snapshot
 
     async def run(self, package: SourcePackage, user_id: str = "default") -> str:
         """Full pipeline: collect → store raw → format → LLM → brief."""
@@ -297,15 +323,42 @@ class IngestAgent:
 
         return await self._generate(package, raw, user_id=user_id)
 
-    async def run_from_raw(self, package: SourcePackage, raw: dict[str, Any], user_id: str = "default") -> str:
+    async def run_from_raw(
+        self,
+        package: SourcePackage,
+        raw: dict[str, Any],
+        user_id: str = "default",
+        target_date: str | None = None,
+    ) -> str:
         """Generate brief from pre-collected raw data (skip collection)."""
-        return await self._generate(package, raw, user_id=user_id)
+        return await self._generate(
+            package,
+            raw,
+            user_id=user_id,
+            target_date=target_date,
+        )
 
-    async def _generate(self, package: SourcePackage, raw: dict[str, Any], user_id: str = "default") -> str:
+    async def _generate(
+        self,
+        package: SourcePackage,
+        raw: dict[str, Any],
+        user_id: str = "default",
+        target_date: str | None = None,
+    ) -> str:
         """Format raw data + call LLM to produce brief."""
+        today = target_date or date.today().isoformat()
+        brief_date = date.fromisoformat(today)
         github_repos = _denormalize(raw["github"], "github")
         github_source = raw.get("github_source", "")
         rss_items = _denormalize(raw["rss"], "rss")
+        unfiltered_rss = len(rss_items)
+        rss_items = _filter_recent_items(rss_items, brief_date)
+        if len(rss_items) < unfiltered_rss:
+            logger.info(
+                "RSS filtered by date window %d→%d",
+                unfiltered_rss,
+                len(rss_items),
+            )
         total_rss = len(rss_items)
         rss_items = _cap_per_source(rss_items, _RSS_PER_SOURCE_LIMIT)
         if len(rss_items) < total_rss:
@@ -313,8 +366,6 @@ class IngestAgent:
                 "RSS capped per-source %d→%d (limit %d)",
                 total_rss, len(rss_items), _RSS_PER_SOURCE_LIMIT,
             )
-
-        today = date.today().isoformat()
 
         if not github_repos and not rss_items:
             return f"# {package.topic} · {today}\n\n今日暂无搜索结果。"
@@ -334,13 +385,20 @@ class IngestAgent:
             if history_text:
                 history_section = f"\n{history_text}"
 
-        snapshot = get_company_snapshot()
+        snapshot = (
+            self.company_snapshot
+            if self.company_snapshot is not None
+            else get_company_snapshot()
+        )
         snapshot_text = _format_company_snapshot(snapshot)
 
         prompt_template = _load_prompt()
         config = get_config()
         schedule_time = config.ingest.brief_schedule_time
-        time_range = f"{(date.today() - timedelta(days=1)).isoformat()} {schedule_time} → {today} {schedule_time}"
+        time_range = (
+            f"{(brief_date - timedelta(days=1)).isoformat()} {schedule_time}"
+            f" → {today} {schedule_time}"
+        )
 
         system_prompt = prompt_template.format(
             topic=package.topic,

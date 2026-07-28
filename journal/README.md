@@ -7,6 +7,7 @@
 
 | 日期 | 主题 | 关键结论 |
 |------|------|----------|
+| 2026-07-28 | 早报评测基线 + 7 天时效过滤 | 首个真实基线 8 项中 6 项通过，发现 2 条非当日来源论文和 1 条过期政策；输入侧确定性过滤将 360 条 RSS 收敛为 254 条，全量 174 测试通过 |
 | 2026-07-21 | RSS 分源限流修复 + 论文日期链路 | 自动采集 source 丢失导致 391 条误压到 15 条；兼容扁平/标准化格式。RSS 发布时间从采集传至 raw/LLM，学术前沿新增日期列 |
 | 2026-07-20 | LLM 账号迁移与日报恢复 | 旧 GLM Key 自 7-16 起 401 导致日报停更；迁移至火山方舟 Coding Plan（Anthropic Messages + glm-5.2[1M]），增加显式 llm_protocol、Anthropic thinking 禁用与永久错误不重试 |
 | 2026-07-03 | 早报截断/空回事故 + 修复(glm-5.1 思考模型) | 早报截断/空回;排查链:非 timeout/max_tokens → 减输入(cap 每源 top15+摘要 120,仍空)→ 真正根因 glm-5.1 思考模型 max_tokens 被 reasoning 占满;修复 config 加 llm_disable_thinking 开关 + body thinking={type:disabled},159 测试过 |

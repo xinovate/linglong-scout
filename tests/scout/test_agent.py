@@ -13,6 +13,7 @@ from linglong.scout.agent import (
     _format_company_snapshot,
     _format_github,
     _format_rss,
+    _filter_recent_items,
     _is_anthropic_api,
     _parse_llm_response,
 )
@@ -112,6 +113,26 @@ def test_format_rss_includes_published_date():
     assert "发布时间: 2026-07-20" in text
 
 
+def test_filter_recent_items_keeps_unknown_dates_and_drops_out_of_window():
+    items = [
+        {"title": "recent", "published": "2026-07-27"},
+        {"title": "boundary", "published": "2026-07-21"},
+        {"title": "stale", "published": "2026-07-20"},
+        {"title": "future", "published": "2026-07-29"},
+        {"title": "unknown", "published": ""},
+        {"title": "invalid", "published": "not-a-date"},
+    ]
+
+    result = _filter_recent_items(items, date(2026, 7, 28))
+
+    assert [item["title"] for item in result] == [
+        "recent",
+        "boundary",
+        "unknown",
+        "invalid",
+    ]
+
+
 class TestIngestAgent:
     @pytest.mark.asyncio
     async def test_run_produces_output(self):
@@ -189,7 +210,7 @@ class TestIngestAgent:
     @pytest.mark.asyncio
     async def test_run_from_raw_skips_collection(self):
         pkg = _make_package()
-        agent = IngestAgent()
+        agent = IngestAgent(company_snapshot={})
 
         raw = {
             "github": [],
@@ -197,10 +218,19 @@ class TestIngestAgent:
             "rss": [{"title": "T", "url": "https://t.com", "snippet": "s", "source": "Feed"}],
         }
 
-        with patch("linglong.scout.agent._call_llm", new_callable=AsyncMock, return_value="# AI 早报"):
-            output = await agent.run_from_raw(pkg, raw)
+        with patch(
+            "linglong.scout.agent._call_llm",
+            new_callable=AsyncMock,
+            return_value="# AI 早报",
+        ) as mock_llm:
+            output = await agent.run_from_raw(
+                pkg,
+                raw,
+                target_date="2026-06-04",
+            )
 
         assert "AI 早报" in output
+        assert "2026-06-04" in mock_llm.call_args.args[0]
 
 
 class TestParseOpengithub:
