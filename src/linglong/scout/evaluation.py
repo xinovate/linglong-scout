@@ -137,12 +137,18 @@ def _check_section_formats(sections: dict[str, str]) -> CheckResult:
             continue
         if expected == "table" and _table_row_count(content) == 0:
             failures.append(f"{name}: no table rows")
-        elif expected == "bullet" and not _BULLET_RE.search(content):
-            if "无重大动态" not in content:
-                failures.append(f"{name}: no bullet list")
-        elif expected == "ordered" and not _ORDERED_RE.search(content):
-            if "无重大动态" not in content:
-                failures.append(f"{name}: no ordered list")
+        elif (
+            expected == "bullet"
+            and not _BULLET_RE.search(content)
+            and "无重大动态" not in content
+        ):
+            failures.append(f"{name}: no bullet list")
+        elif (
+            expected == "ordered"
+            and not _ORDERED_RE.search(content)
+            and "无重大动态" not in content
+        ):
+            failures.append(f"{name}: no ordered list")
     return CheckResult(
         "section_formats",
         not failures,
