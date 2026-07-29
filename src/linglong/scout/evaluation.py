@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 _SECTION_SPECS = {
     "关键人物": "table",
@@ -25,6 +26,7 @@ _TABLE_SEPARATOR_RE = re.compile(r"^\|\s*:?-{3,}")
 _BULLET_RE = re.compile(r"^\s*-\s+\S", re.MULTILINE)
 _ORDERED_RE = re.compile(r"^\s*\d+\.\s+\S", re.MULTILINE)
 _CIRCLED_DIGITS = frozenset("①②③④⑤")
+_IGNORED_QUERY_KEYS = frozenset({"f"})
 
 
 @dataclass(frozen=True)
@@ -191,12 +193,42 @@ def _check_top5(sections: dict[str, str]) -> CheckResult:
 
 def _raw_url_map(raw: dict[str, Any]) -> dict[str, dict[str, Any]]:
     items = [*raw.get("rss", []), *raw.get("github", [])]
-    return {item.get("url", ""): item for item in items if item.get("url")}
+    return {
+        _canonical_url(item.get("url", "")): item
+        for item in items
+        if item.get("url")
+    }
+
+
+def _canonical_url(url: str) -> str:
+    parts = urlsplit(url)
+    hostname = (parts.hostname or "").lower()
+    if hostname.startswith("www."):
+        hostname = hostname[4:]
+    port = f":{parts.port}" if parts.port else ""
+    query = urlencode(
+        [
+            (key, value)
+            for key, value in parse_qsl(parts.query, keep_blank_values=True)
+            if key.lower() not in _IGNORED_QUERY_KEYS
+            and not key.lower().startswith("utm_")
+        ]
+    )
+    return urlunsplit(
+        (
+            parts.scheme.lower(),
+            f"{hostname}{port}",
+            parts.path.rstrip("/") or "/",
+            query,
+            "",
+        )
+    )
 
 
 def _check_link_provenance(output: str, raw: dict[str, Any]) -> CheckResult:
     output_urls = set(_LINK_RE.findall(output))
-    unknown = sorted(output_urls - set(_raw_url_map(raw)))
+    raw_urls = _raw_url_map(raw)
+    unknown = sorted(url for url in output_urls if _canonical_url(url) not in raw_urls)
     return CheckResult(
         "link_provenance",
         not unknown,
@@ -216,7 +248,7 @@ def _check_link_timeliness(
     url_map = _raw_url_map(raw)
 
     for url in set(_LINK_RE.findall(output)):
-        published = url_map.get(url, {}).get("published", "")
+        published = url_map.get(_canonical_url(url), {}).get("published", "")
         if not published:
             continue
         try:
@@ -243,10 +275,11 @@ def _check_cross_section_duplicates(sections: dict[str, str]) -> CheckResult:
         if name == "今日最有价值信息":
             continue
         for url in set(_LINK_RE.findall(content)):
-            if url in seen:
-                duplicates.append(f"{url} ({seen[url]} / {name})")
+            canonical_url = _canonical_url(url)
+            if canonical_url in seen:
+                duplicates.append(f"{url} ({seen[canonical_url]} / {name})")
             else:
-                seen[url] = name
+                seen[canonical_url] = name
 
     return CheckResult(
         "cross_section_duplicates",
@@ -272,7 +305,9 @@ def _check_github_top8(
     )[:8]
     expected_urls = [item.get("url", "") for item in expected if item.get("url")]
     actual_urls = _LINK_RE.findall(sections.get("开源趋势", ""))
-    passed = actual_urls == expected_urls
+    passed = [_canonical_url(url) for url in actual_urls] == [
+        _canonical_url(url) for url in expected_urls
+    ]
     return CheckResult(
         "github_daily_top8",
         passed,

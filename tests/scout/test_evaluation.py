@@ -133,6 +133,30 @@ def test_rejects_stale_link_and_wrong_github_order():
     assert not _check(report, "github_daily_top8").passed
 
 
+def test_normalizes_equivalent_source_urls():
+    raw = _raw()
+    raw["rss"][3]["url"] = (
+        "https://www.example.com/funding?f=rss&utm_source=feed#fragment"
+    )
+
+    report = evaluate_brief(_brief(), raw, "2026-06-04")
+
+    assert _check(report, "link_provenance").passed
+    assert _check(report, "link_timeliness").passed
+
+
+def test_detects_duplicate_across_equivalent_urls():
+    output = _brief().replace(
+        "https://example.com/policy",
+        "https://www.example.com/industry?utm_source=brief",
+    )
+
+    report = evaluate_brief(output, _raw(), "2026-06-04")
+
+    assert _check(report, "link_provenance").passed
+    assert not _check(report, "cross_section_duplicates").passed
+
+
 def test_loads_cold_snapshot(tmp_path):
     (tmp_path / "2026-06-04_rss.json").write_text(
         json.dumps([{"url": "https://example.com/rss"}]),
