@@ -88,7 +88,7 @@ Scout 负责从采集到格式化输出的完整链路。推送和调度由调�
 | v2.12 | 早报 prompt 紧凑格式 + pre-generate brief + githooks 管理 | prompt 段落标题嵌入格式标签；scheduler 采集后预生成早报避免 MCP 超时；doc-check pre-push 阻塞模式；.githooks 统一 hook 管理 |
 | v2.13 | All-in-One Docker Compose + RSSHub 配置独立化 | Redis/RSSHub 合并到统一 docker-compose；Docker 内部网络替代 nginx 反代；rsshub_url + route 字段替代 :1200 硬编码 |
 | v2.14 | 移除 SearXNG | SearXNG 完全移除，数据源精简为 RSS（18 源）+ GitHub Trending 两路并发；package 仅 name + topic；配置移除 searxng_url/searxng_api_key/search_timeout/search_queries |
-| v2.15 | 早报评测 | 历史输入按目标日期回放；确定性检查结构、来源、时效、重复与 GitHub 日榜 |
+| v2.15 | 早报评测 | 历史输入按目标日期回放；确定性检查结构、来源、时效、重复、GitHub 日榜及指标完整性 |
 
 ---
 

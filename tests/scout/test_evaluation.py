@@ -38,12 +38,12 @@ def _raw() -> dict:
             {
                 "title": "a/repo",
                 "url": "https://github.com/a/repo",
-                "extra": {"period": "日增长", "growth": "200"},
+                "extra": {"period": "日增长", "growth": "200", "stars": "1.2k"},
             },
             {
                 "title": "b/repo",
                 "url": "https://github.com/b/repo",
-                "extra": {"period": "日增长", "growth": "100"},
+                "extra": {"period": "日增长", "growth": "100", "stars": "800"},
             },
             {
                 "title": "weekly/repo",
@@ -80,8 +80,8 @@ def _brief() -> str:
 - 政策 — [来源](https://example.com/policy)
 
 ### ⭐ 开源趋势
-1. [a/repo](https://github.com/a/repo)
-2. [b/repo](https://github.com/b/repo)
+1. **a/repo** +200⭐ · 1.2k⭐ — [GitHub](https://github.com/a/repo)
+2. **b/repo** +100⭐ · 800⭐ — [GitHub](https://github.com/b/repo)
 
 ### 🔥 今日最有价值信息
 **① 一**
@@ -121,16 +121,39 @@ def test_rejects_stale_link_and_wrong_github_order():
     raw = _raw()
     raw["rss"][0]["published"] = "2026-05-01"
     output = _brief().replace(
-        "1. [a/repo](https://github.com/a/repo)\n"
-        "2. [b/repo](https://github.com/b/repo)",
-        "1. [b/repo](https://github.com/b/repo)\n"
-        "2. [a/repo](https://github.com/a/repo)",
+        "1. **a/repo** +200⭐ · 1.2k⭐ — [GitHub](https://github.com/a/repo)\n"
+        "2. **b/repo** +100⭐ · 800⭐ — [GitHub](https://github.com/b/repo)",
+        "1. **b/repo** +100⭐ · 800⭐ — [GitHub](https://github.com/b/repo)\n"
+        "2. **a/repo** +200⭐ · 1.2k⭐ — [GitHub](https://github.com/a/repo)",
     )
 
     report = evaluate_brief(output, raw, "2026-06-04")
 
     assert not _check(report, "link_timeliness").passed
     assert not _check(report, "github_daily_top8").passed
+
+
+def test_rejects_invalid_github_input_metrics():
+    raw = _raw()
+    raw["github"][0]["extra"]["stars"] = "0"
+
+    report = evaluate_brief(_brief(), raw, "2026-06-04")
+
+    quality = _check(report, "github_input_quality")
+    assert not quality.passed
+    assert "source=fixture" in quality.detail
+    assert "total_stars_valid=1/2" in quality.detail
+    assert not _check(report, "github_metric_fidelity").passed
+
+
+def test_rejects_missing_github_total_stars_in_output():
+    output = _brief().replace("+200⭐ · 1.2k⭐", "+200⭐")
+
+    report = evaluate_brief(output, _raw(), "2026-06-04")
+
+    assert _check(report, "github_input_quality").passed
+    assert _check(report, "github_daily_top8").passed
+    assert not _check(report, "github_metric_fidelity").passed
 
 
 def test_normalizes_equivalent_source_urls():

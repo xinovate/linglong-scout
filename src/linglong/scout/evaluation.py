@@ -25,6 +25,7 @@ _LINK_RE = re.compile(r"\[[^\]]+\]\((https?://[^)\s]+)\)")
 _TABLE_SEPARATOR_RE = re.compile(r"^\|\s*:?-{3,}")
 _BULLET_RE = re.compile(r"^\s*-\s+\S", re.MULTILINE)
 _ORDERED_RE = re.compile(r"^\s*\d+\.\s+\S", re.MULTILINE)
+_STAR_METRIC_RE = re.compile(r"([+]?\d[\d,.]*[kKmM]?)\s*⭐")
 _CIRCLED_DIGITS = frozenset("①②③④⑤")
 _IGNORED_QUERY_KEYS = frozenset({"f"})
 
@@ -93,7 +94,9 @@ def evaluate_brief(
         _check_link_provenance(output, raw),
         _check_link_timeliness(output, raw, evaluation_date),
         _check_cross_section_duplicates(sections),
+        _check_github_input_quality(raw),
         _check_github_top8(sections, raw),
+        _check_github_metric_fidelity(sections, raw),
     ]
     return EvaluationReport(target_date=target_date, checks=tuple(checks))
 
@@ -294,15 +297,7 @@ def _check_github_top8(
     sections: dict[str, str],
     raw: dict[str, Any],
 ) -> CheckResult:
-    expected = sorted(
-        (
-            item
-            for item in raw.get("github", [])
-            if _github_period(item) == "日增长"
-        ),
-        key=_github_growth,
-        reverse=True,
-    )[:8]
+    expected = _github_daily_top8(raw)
     expected_urls = [item.get("url", "") for item in expected if item.get("url")]
     actual_urls = _LINK_RE.findall(sections.get("开源趋势", ""))
     passed = [_canonical_url(url) for url in actual_urls] == [
@@ -315,14 +310,110 @@ def _check_github_top8(
     )
 
 
+def _check_github_input_quality(raw: dict[str, Any]) -> CheckResult:
+    expected = _github_daily_top8(raw)
+    valid_growth = sum(
+        _is_positive_star_value(_github_metric(item, "growth"))
+        for item in expected
+    )
+    valid_stars = sum(
+        _is_positive_star_value(_github_metric(item, "stars"))
+        for item in expected
+    )
+    source = str(raw.get("github_source") or "unknown")
+    passed = bool(expected) and valid_growth == len(expected) and valid_stars == len(expected)
+    return CheckResult(
+        "github_input_quality",
+        passed,
+        (
+            f"source={source}, daily_items={len(expected)}, "
+            f"growth_valid={valid_growth}/{len(expected)}, "
+            f"total_stars_valid={valid_stars}/{len(expected)}"
+        ),
+    )
+
+
+def _check_github_metric_fidelity(
+    sections: dict[str, str],
+    raw: dict[str, Any],
+) -> CheckResult:
+    expected = _github_daily_top8(raw)
+    invalid_raw = [
+        item.get("url", "")
+        for item in expected
+        if not _is_positive_star_value(_github_metric(item, "growth"))
+        or not _is_positive_star_value(_github_metric(item, "stars"))
+    ]
+    if invalid_raw:
+        return CheckResult(
+            "github_metric_fidelity",
+            False,
+            f"raw metrics invalid: {', '.join(invalid_raw)}",
+        )
+
+    lines_by_url: dict[str, str] = {}
+    for line in sections.get("开源趋势", "").splitlines():
+        for url in _LINK_RE.findall(line):
+            lines_by_url[_canonical_url(url)] = line
+
+    failures: list[str] = []
+    for item in expected:
+        url = str(item.get("url", ""))
+        line = lines_by_url.get(_canonical_url(url), "")
+        actual = [
+            _normalize_star_value(value)
+            for value in _STAR_METRIC_RE.findall(line)
+        ]
+        expected_metrics = [
+            _normalize_star_value(_github_metric(item, "growth")),
+            _normalize_star_value(_github_metric(item, "stars")),
+        ]
+        if actual[:2] != expected_metrics:
+            failures.append(f"{url}: expected {expected_metrics}, got {actual[:2]}")
+
+    return CheckResult(
+        "github_metric_fidelity",
+        not failures,
+        "GitHub growth and total stars match raw input"
+        if not failures
+        else "; ".join(failures),
+    )
+
+
+def _github_daily_top8(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    return sorted(
+        (
+            item
+            for item in raw.get("github", [])
+            if _github_period(item) == "日增长"
+        ),
+        key=_github_growth,
+        reverse=True,
+    )[:8]
+
+
 def _github_period(item: dict[str, Any]) -> str:
     return str(item.get("extra", {}).get("period") or item.get("period") or "")
 
 
+def _github_metric(item: dict[str, Any], name: str) -> str:
+    return str(item.get("extra", {}).get(name) or item.get(name) or "").strip()
+
+
 def _github_growth(item: dict[str, Any]) -> int:
-    value = str(item.get("extra", {}).get("growth") or item.get("growth") or "")
+    value = _github_metric(item, "growth")
     digits = re.sub(r"\D", "", value)
     return int(digits) if digits else 0
+
+
+def _normalize_star_value(value: str) -> str:
+    return value.lower().replace(",", "").lstrip("+")
+
+
+def _is_positive_star_value(value: str) -> bool:
+    normalized = _normalize_star_value(value)
+    match = re.fullmatch(r"(\d+(?:\.\d+)?)[km]?", normalized)
+    return bool(match and float(match.group(1)) > 0)
 
 
 def main() -> None:

@@ -1,13 +1,17 @@
 """Tests for collect.py concurrent collection and orchestration."""
 
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from linglong.scout.collect import (
+    _parse_trending_html,
     collect as collect_data,
     fetch_single_feed,
 )
+
+_FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
 def _mock_config():
@@ -94,6 +98,15 @@ class TestConcurrentCollect:
 
         assert result["github"] == []
         assert result["rss"] == []
+
+
+def test_parses_wangchujiang_total_and_daily_stars():
+    html = (_FIXTURES_DIR / "wangchujiang_trending.html").read_text(encoding="utf-8")
+
+    repos = _parse_trending_html(html, max_results=2)
+
+    assert [repo["stars"] for repo in repos] == ["18.813k", "2345"]
+    assert [repo["growth"] for repo in repos] == ["341", "180"]
 
 
 class TestFetchSingleFeed:
